@@ -1,5 +1,7 @@
 import pandas as pd
 import requests
+import sys
+import io
 from datetime import date
 from time import sleep
 from concurrent.futures import ThreadPoolExecutor
@@ -146,7 +148,11 @@ def batch_geocoder(data, direction='forward', request=None, n_threads=1):
         failed_df = pd.DataFrame(columns=['Latitude', 'Longitude', 'Date'])
         if request is None:
             request = request_coordinates_geocode
-
+            
+    # suppress stdout
+    stdout = sys.stdout
+    sys.stdout = io.StringIO()
+    
     # set up ThreadPoolExecutor to run request_address_geocode
     with ThreadPoolExecutor(max_workers=n_threads) as executor:
         for result in executor.map(request, data):
@@ -154,5 +160,8 @@ def batch_geocoder(data, direction='forward', request=None, n_threads=1):
                 located_df = pd.concat([located_df, pd.DataFrame([result])], ignore_index=True)
             else:
                 failed_df = pd.concat([failed_df, pd.DataFrame([result])], ignore_index=True)
-
+                
+    # restore stdout
+    sys.stdout = stdout
+    
     return located_df, failed_df
