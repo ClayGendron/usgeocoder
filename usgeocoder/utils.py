@@ -41,10 +41,13 @@ def create_address_list(df):
     if len(df.columns) == 5:
         df.columns = address_parts_cols
         addresses = df.apply(apply_concatenate_address, axis = 1)
+        
     elif not set(address_parts_cols).issubset(set(df.columns)) and not set(address_col).issubset(set(df.columns)):
         raise Exception('The dataframe must have the following columns: [Address 1, Address 2, City, State, ZIP] or [Address]')
+    
     elif set(address_col).issubset(set(df.columns)):
         addresses = df['Address']
+    
     elif set(address_parts_cols).issubset(set(df.columns)):
         addresses = df.apply(apply_concatenate_address, axis = 1)
     
