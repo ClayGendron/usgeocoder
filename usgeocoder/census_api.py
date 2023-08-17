@@ -4,8 +4,13 @@ from datetime import date
 from time import sleep
 from concurrent.futures import ThreadPoolExecutor
 
+BENCHMARK = 'Public_AR_Current'
+VINTAGE = 'Current_Current'
 
-def request_address_geocode(address, benchmark='Public_AR_Current', batch=False):
+sleep_delay = 0.1
+timeouts = [0.5, 1, 2, 5]
+
+def request_address_geocode(address, benchmark=BENCHMARK, batch=False):
     base_geocode_url = 'https://geocoding.geo.census.gov/geocoder/locations/onelineaddress'
     geocode_params = {
         'benchmark': benchmark, 
@@ -14,9 +19,6 @@ def request_address_geocode(address, benchmark='Public_AR_Current', batch=False)
     }
     
     today = date.today().strftime('%Y-%m-%d')
-
-    sleep_delay = 0.1
-    timeouts = [0.5, 1, 2, 5]
     
     def successful_response(address, coordinates):
         longitude = coordinates['x']
@@ -91,23 +93,20 @@ def request_address_geocode(address, benchmark='Public_AR_Current', batch=False)
                 print(f'Request exception occurred for address {address}: {e}')
                 return None
 
-def request_coordinates_geocode(longitude_latitude, benchmark='Public_AR_Current', vintage='Current_Current', batch=False):
+def request_coordinates_geocode(longitude_latitude, benchmark=BENCHMARK, vintage=VINTAGE, batch=False):
     longitude = longitude_latitude[0]
     latitude = longitude_latitude[1]
     
     base_geocode_url = 'https://geocoding.geo.census.gov/geocoder/geographies/coordinates'
     geocode_params = {
         'benchmark': benchmark,
-        'format': 'json',
         'vintage': vintage,
+        'format': 'json',
         'x': longitude,
         'y': latitude
     }
     
     today = date.today().strftime('%Y-%m-%d')
-    
-    sleep_delay = 0.1
-    timeouts = [0.5, 1, 2, 5]
     
     def successful_response(longitude, latitude, geographies):
         response = {
@@ -221,7 +220,7 @@ def batch_geocoder(data, direction='forward', n_threads=1):
     # set up ThreadPoolExecutor to run request functions in parallel
     with ThreadPoolExecutor(max_workers=n_threads) as executor:
         for result in executor.map(batch_request, data):
-            if result[list(result.keys())[-1]] is not None: # if the request was successful
+            if result[next(reversed(result.keys()))] is not None: # if the request was successful
                 located_df = pd.concat([located_df, pd.DataFrame([result])], ignore_index=True)
             else:
                 failed_df = pd.concat([failed_df, pd.DataFrame([result])], ignore_index=True)
