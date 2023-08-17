@@ -111,8 +111,7 @@ def request_coordinates_geocode(longitude_latitude, benchmark='Public_AR_Current
     
     def successful_response(longitude, latitude, geographies):
         response = {
-            'Longitude': longitude,
-            'Latitude': latitude,
+            'Coordinates': (longitude, latitude),
             'Date': today,
             'State': geographies['States'][0]['BASENAME'],
             'County': geographies['Counties'][0]['BASENAME'],
@@ -125,8 +124,7 @@ def request_coordinates_geocode(longitude_latitude, benchmark='Public_AR_Current
     
     def failed_response(longitude, latitude):
         response = {
-            'Longitude': longitude,
-            'Latitude': latitude,
+            'Coordinates': (longitude, latitude),
             'Date': today,
             'State': None,
             'County': None,
@@ -203,17 +201,18 @@ def batch_geocoder(data, direction='forward', n_threads=1):
 
     data = set(data)
     
+    forward_cols = ['Address', 'Date', 'Longitude', 'Latitude']
+    reverse_cols = ['Coordinates', 'Date', 'State', 'County', 'Urban Area', 'Census Block', 'Census Tract']
+    
     if direction == 'forward':
-        located_df = pd.DataFrame(columns=['Address', 'Date', 'Longitude', 'Latitude'])
-        failed_df = pd.DataFrame(columns=['Address', 'Date', 'Longitude', 'Latitude'])
-        if request is None:
-            request = request_address_geocode
+        located_df = pd.DataFrame(columns=forward_cols)
+        failed_df = pd.DataFrame(columns=forward_cols)
+        request = request_address_geocode
         
     elif direction == 'reverse':
-        located_df = pd.DataFrame(columns=['Longitude', 'Latitude', 'Date', 'State', 'County', 'Urban Area', 'Census Block', 'Census Tract'])
-        failed_df = pd.DataFrame(columns=['Longitude', 'Latitude', 'Date', 'State', 'County', 'Urban Area', 'Census Block', 'Census Tract'])
-        if request is None:
-            request = request_coordinates_geocode
+        located_df = pd.DataFrame(columns=reverse_cols)
+        failed_df = pd.DataFrame(columns=reverse_cols)
+        request = request_coordinates_geocode
     
     # build wrapper to set request function to batch mode
     def batch_request(data):
