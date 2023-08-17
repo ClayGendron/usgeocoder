@@ -194,7 +194,7 @@ def batch_geocoder(data, direction='forward', n_threads=1):
     # show warning if n_threads is set very high and ask user if they want to set n_threads to 100
     if n_threads > 100:
         print('WARNING: n_threads is set very high and you may experience rate limits.')
-        print('Would you like to set n_threads to the recomended max of 100? (y/n)')
+        print('Would you like to set n_threads to the recommended max of 100? (y/n)')
         response = input()
         if response == 'y':
             n_threads = 100

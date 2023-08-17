@@ -1,47 +1,49 @@
 import pandas as pd
-import requests
 from datetime import date
-from time import sleep
 from pyprojroot import here
-from concurrent.futures import ThreadPoolExecutor
 
-from .utils import create_address_list
+from .utils import create_address_list, create_coordinates_list
 from .census_api import request_address_geocode, request_coordinates_geocode, batch_geocoder
 
 import warnings
 warnings.filterwarnings('ignore', category=UserWarning, module='pyprojroot')
 
 
-class ForwardGeocoder:
+class Geocoder:
     def __init__(self):
-        # check if geocoder directory exists, if not create it
-        if here('geocoder').exists():
-            try:
-                self.located_addresses = pd.read_csv(here('geocoder/located_addresses.csv'))
-            except FileNotFoundError:
-                print('Geocoder directory exists but located_addresses.csv does not, creating new one.')
-                print('If you have an existing located_addresses.csv data, move it to the geocoder directory.')
-                self.located_addresses = pd.DataFrame(columns=['Address', 'Date', 'Latitude', 'Longitude'])
-
-            try:
-                self.failed_addresses = pd.read_csv(here('geocoder/failed_addresses.csv'))
-            except FileNotFoundError:
-                print('Geocoder directory exists but failed_addresses.csv does not. Creating new one.')
-                print('If you have an existing failed_addresses.csv data, move it to the geocoder directory.')
-                self.failed_addresses = pd.DataFrame(columns=['Address', 'Date'])
-
-        else:
-            here('geocoder').mkdir()
-            self.located_addresses = pd.DataFrame(columns=['Address', 'Date', 'Latitude', 'Longitude'])
-            self.located_addresses.to_csv(here('geocoder/located_addresses.csv'), index=False)
-
-            self.failed_addresses = pd.DataFrame(columns=['Address', 'Date'])
-            self.failed_addresses.to_csv(here('geocoder/failed_addresses.csv'), index=False)
-
-        # initialize empty data and addresses
         self.data = pd.DataFrame()
         self.addresses = pd.Series()
-        self.path = here('geocoder')
+        self.coordinates = pd.Series()
+        
+        files = {
+            'located_addresses': ['Address', 'Date', 'Longitude', 'Latitude'],
+            'failed_addresses': ['Address', 'Date', 'Longitude', 'Latitude'],
+            'located_coordinates': ['Longitude', 'Latitude', 'Date', 'State', 'County', 'Urban Area', 'Census Block', 'Census Tract'],
+            'failed_coordinates': ['Longitude', 'Latitude', 'Date', 'State', 'County', 'Urban Area', 'Census Block', 'Census Tract'],
+        }
+
+        if here('geocoder').exists():
+            for file_name, columns in files.items():
+                setattr(self, file_name, self._load_or_create_csv(file_name, columns))
+        else:
+            here('geocoder').mkdir()
+            for file_name, columns in files.items():
+                df = pd.DataFrame(columns=columns)
+                df.to_csv(here(f'geocoder/{file_name}.csv'), index=False)
+                setattr(self, file_name, df)
+
+    @staticmethod
+    def _load_or_create_csv(file_name, columns):
+        path = here(f'geocoder/{file_name}.csv')
+        if path.exists():
+            return pd.read_csv(path)
+        
+        else:
+            print(f'{file_name}.csv does not exist. Creating a new one.')
+            print(f'If you have an existing {file_name}.csv data, move it to the geocoder directory.')
+            df = pd.DataFrame(columns=columns)
+            df.to_csv(path, index=False)
+            return pd.DataFrame(columns=columns)
 
     def add_data(self, data):
         self.addresses = create_address_list(data)
@@ -54,14 +56,6 @@ class ForwardGeocoder:
     def save_data(self):
         self.located_addresses.to_csv(here('geocoder/located_addresses.csv'), index=False)
         self.failed_addresses.to_csv(here('geocoder/failed_addresses.csv'), index=False)
-
-    def _forward_request(self, address):
-        # if request_address_geocode returns None, return the address and today's date
-        coordinates = request_address_geocode(address)
-        if coordinates is not None:
-            return coordinates
-        else:
-            return {'Address': address, 'Date': date.today().strftime('%Y-%m-%d')}
 
     def _forward_geocoder(self, addresses, n_threads=100):
         # remove any addresses that have already been geocoded
@@ -89,21 +83,21 @@ class ReverseGeocoder:
             except FileNotFoundError:
                 print('Geocoder directory exists but located_coordinates.csv does not, creating new one.')
                 print('If you have an existing located_coordinates.csv data, move it to the geocoder directory.')
-                self.located_coordinates = pd.DataFrame(columns=['Latitude', 'Longitude', 'Date', 'Address'])
+                self.located_coordinates = pd.DataFrame(columns=['Longitude', 'Latitude', 'Date', 'Address'])
 
             try:
                 self.failed_coordinates = pd.read_csv(here('geocoder/failed_coordinates.csv'))
             except FileNotFoundError:
                 print('Geocoder directory exists but failed_coordinates.csv does not. Creating new one.')
                 print('If you have an existing failed_coordinates.csv data, move it to the geocoder directory.')
-                self.failed_coordinates = pd.DataFrame(columns=['Latitude', 'Longitude', 'Date'])
+                self.failed_coordinates = pd.DataFrame(columns=['Longitude', 'Latitude', 'Date'])
 
         else:
             here('geocoder').mkdir()
-            self.located_coordinates = pd.DataFrame(columns=['Latitude', 'Longitude', 'Date', 'Address'])
+            self.located_coordinates = pd.DataFrame(columns=['Longitude', 'Latitude', 'Date', 'Address'])
             self.located_coordinates.to_csv(here('geocoder/located_coordinates.csv'), index=False)
 
-            self.failed_coordinates = pd.DataFrame(columns=['Latitude', 'Longitude', 'Date'])
+            self.failed_coordinates = pd.DataFrame(columns=['Longitude', 'Latitude', 'Date'])
             self.failed_coordinates.to_csv(here('geocoder/failed_coordinates.csv'), index=False)
 
         # initialize empty data and addresses
@@ -112,7 +106,7 @@ class ReverseGeocoder:
         self.path = here('geocoder')
 
     def add_data(self, data):
-        self.coordinates = data[['Latitude', 'Longitude']]
+        self.coordinates = data[['Longitude', 'Latitude']]
         self.data = data
 
     def run(self):
@@ -133,7 +127,7 @@ class ReverseGeocoder:
 
     def _reverse_geocoder(self, coordinates, n_threads=100):
         # remove any addresses that have already been geocoded
-        for coordinates_list in [self.located_coordinates[['Latitude', 'Longitude']].values, self.failed_coordinates[['Latitude', 'Longitude']].values]:
+        for coordinates_list in [self.located_coordinates[['Longitude', 'Latitude']].values, self.failed_coordinates[['Longitude', 'Latitude']].values]:
             coordinates = coordinates.difference(coordinates_list)
         
         located_df, failed_df = batch_geocoder(
