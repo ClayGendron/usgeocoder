@@ -1,0 +1,4 @@
+setuptools~=68.1.2
+pandas~=2.0.2
+pyprojroot~=0.2.0
+requests~=2.31.0
