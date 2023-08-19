@@ -5,11 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="c2322a2d-44c3-4f24-9389-c2e624ba78d8" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/usgeocoder/census_api.py" beforeDir="false" afterPath="$PROJECT_DIR$/usgeocoder/census_api.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/usgeocoder/geocoder.py" beforeDir="false" afterPath="$PROJECT_DIR$/usgeocoder/geocoder.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/usgeocoder/utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/usgeocoder/utils.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -66,7 +62,7 @@
       <workItem from="1692136849922" duration="32000" />
       <workItem from="1692136888805" duration="611000" />
       <workItem from="1692137527518" duration="51000" />
-      <workItem from="1692228299592" duration="2587000" />
+      <workItem from="1692228299592" duration="2689000" />
     </task>
     <servers />
   </component>
