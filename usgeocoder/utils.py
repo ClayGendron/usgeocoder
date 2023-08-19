@@ -21,11 +21,11 @@ def apply_concatenate_address(row):
         print(f'Error processing row: {row}. Error: {e}')
         return None
     
-# create a new column of latitude and longitude coordinates
+# create a new column of longitude and latitude coordinates
 def apply_concatenate_coordinates(row):
     try:
         # strip any whitespace and convert to decimal number
-        coordinates = (float(str(row['Latitude']).strip()), float(str(row['Longitude']).strip()))
+        coordinates = (float(str(row['Longitude']).strip()), float(str(row['Latitude']).strip()))
         return coordinates
     
     except Exception as e:
@@ -60,24 +60,25 @@ def create_address_list(df):
     return addresses_list
 
 def create_coordinates_list(df):
-    coordinate_parts_cols = ['Latitude', 'Longitude']
-    coordinates_col = ['Coordinates']
+    coordinate_parts_cols = ['Longitude', 'Latitude']
+    coordinates_col = 'Coordinates'
     
-    if len(df.columns) == 2:
-        df.columns = coordinate_parts_cols
-        df.dropna(subset=['Latitude', 'Longitude'], how='any', inplace=True)
-        coordinates = df.apply(apply_concatenate_coordinates, axis = 1)
-        
-    elif not set(coordinate_parts_cols).issubset(set(df.columns)) and not set(coordinates_col).issubset(set(df.columns)):
-        raise Exception('The dataframe must have the following columns: [Latitude, Longitude] or [Coordinates]')
+    # Ensure columns exist
+    if not (set(coordinate_parts_cols).issubset(df.columns) or coordinates_col in df.columns):
+        raise Exception('The dataframe must have the following columns: [Longitude, Latitude] or [Coordinates]')
     
-    elif set(coordinates_col).issubset(set(df.columns)):
-        df.dropna(subset=['Coordinates'], how='any', inplace=True)
-        coordinates = df['Coordinates']
-        
-    elif set(coordinate_parts_cols).issubset(set(df.columns)):
-        df.dropna(subset=['Latitude', 'Longitude'], how='any', inplace=True)
-        coordinates = df.apply(apply_concatenate_coordinates, axis = 1)
+    # Handle case where there's only 'Coordinates' column
+    if coordinates_col in df.columns:
+        df = df.dropna(subset=[coordinates_col])
+        coordinates = df[coordinates_col]
+
+    # Handle case where there are 'Longitude' and 'Latitude' columns
+    elif set(coordinate_parts_cols).issubset(df.columns):
+        df = df.dropna(subset=coordinate_parts_cols)
+        coordinates = df.apply(apply_concatenate_coordinates, axis=1)
+    else:
+        # This should not be reached based on previous checks, but included for clarity.
+        raise Exception('Unexpected columns in dataframe.')
         
     coordinates_list = coordinates.drop_duplicates().tolist()
     

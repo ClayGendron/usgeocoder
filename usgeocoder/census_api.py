@@ -114,7 +114,6 @@ def request_coordinates_geocode(longitude_latitude, benchmark=BENCHMARK, vintage
             'Date': today,
             'State': geographies['States'][0]['BASENAME'],
             'County': geographies['Counties'][0]['BASENAME'],
-            'Urban Area': geographies['Urban Areas'][0]['BASENAME'],
             'Census Block': geographies['2020 Census Blocks'][0]['BASENAME'],
             'Census Tract': geographies['Census Tracts'][0]['BASENAME']
         }
@@ -127,7 +126,6 @@ def request_coordinates_geocode(longitude_latitude, benchmark=BENCHMARK, vintage
             'Date': today,
             'State': None,
             'County': None,
-            'Urban Area': None,
             'Census Block': None,
             'Census Tract': None
         }
@@ -143,6 +141,7 @@ def request_coordinates_geocode(longitude_latitude, benchmark=BENCHMARK, vintage
             if 'result' in geocode_data and len(geocode_data['result']['geographies']) == 0:                
                 sleep(sleep_delay)
                 if batch:
+                    print(failed_response(longitude, latitude))
                     return failed_response(longitude, latitude)
                 else:
                     print(f'Coordinates ({longitude}, {latitude}) did not match any records.')
@@ -156,6 +155,7 @@ def request_coordinates_geocode(longitude_latitude, benchmark=BENCHMARK, vintage
         except ValueError:
             sleep(sleep_delay)
             if batch:
+                print(failed_response(longitude, latitude))
                 return failed_response(longitude, latitude)
             else:
                 print(f'Decoding JSON has failed for coordinates: ({longitude}, {latitude})')
@@ -165,6 +165,7 @@ def request_coordinates_geocode(longitude_latitude, benchmark=BENCHMARK, vintage
             if t == timeouts[-1]:
                 sleep(sleep_delay)
                 if batch:
+                    print(failed_response(longitude, latitude))
                     return failed_response(longitude, latitude)
                 else:
                     print(f'All attempts failed for coordinates: ({longitude}, {latitude})')
@@ -178,6 +179,7 @@ def request_coordinates_geocode(longitude_latitude, benchmark=BENCHMARK, vintage
             # Catch any unforeseen requests-related exceptions
             sleep(sleep_delay)
             if batch:
+                print(failed_response(longitude, latitude))
                 return failed_response(longitude, latitude)
             else:
                 print(f'Request exception occurred for coordinates ({longitude}, {latitude}): {e}')

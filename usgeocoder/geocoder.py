@@ -17,8 +17,8 @@ class Geocoder:
         files = {
             'located_addresses': ['Address', 'Date', 'Longitude', 'Latitude'],
             'failed_addresses': ['Address', 'Date', 'Longitude', 'Latitude'],
-            'located_coordinates': ['Coordinates', 'Date', 'State', 'County', 'Urban Area', 'Census Block', 'Census Tract'],
-            'failed_coordinates': ['Coordinates', 'Date', 'State', 'County', 'Urban Area', 'Census Block', 'Census Tract'],
+            'located_coordinates': ['Coordinates', 'Date', 'State', 'County', 'Census Block', 'Census Tract'],
+            'failed_coordinates': ['Coordinates', 'Date', 'State', 'County', 'Census Block', 'Census Tract'],
         }
 
         if here('geocoder').exists():
@@ -71,9 +71,12 @@ class Geocoder:
                 return None
 
     def forward(self, addresses=None):
-        if addresses:
+        if addresses is not None:
+            # add addresses to self.addresses if given
             self.add_addresses(addresses)
-            
+        
+        # load addresses from self.addresses and convert to set
+        addresses = set(self.addresses)
         # remove any addresses that have already been geocoded
         for address_list in [self.located_addresses['Address'].values, self.failed_addresses['Address'].values]:
             addresses = addresses.difference(address_list)
@@ -85,11 +88,15 @@ class Geocoder:
         self.save_data()
         
     def reverse(self, coordinates=None):
-        if coordinates:
+        if coordinates is not None:
+            # add coordinates to self.coordinates if given
             self.add_coordinates(coordinates)
-            
+        
+        # load coordinates from self.coordinates and convert to set
+        coordinates = set(self.coordinates)
+        
         # remove any coordinates that have already been geocoded
-        for coordinates_list in [self.located_coordinates[['Longitude', 'Latitude']].values, self.failed_coordinates[['Longitude', 'Latitude']].values]:
+        for coordinates_list in [self.located_coordinates['Coordinates'].values, self.failed_coordinates['Coordinates'].values]:
             coordinates = coordinates.difference(coordinates_list)
         
         located_df, failed_df = batch_geocoder(data=coordinates, direction='reverse', n_threads=100)
