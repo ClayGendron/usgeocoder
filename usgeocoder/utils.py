@@ -5,13 +5,12 @@ import pandas as pd
 def apply_concatenate_address(row):
     try:
         address_parts = [
-            str(row['Address 1']).strip() if pd.notna(row['Address 1']) else '',
-            ' ' + str(row['Address 2']).strip() if pd.notna(row['Address 2']) else '',
+            str(row['Street Address']).strip() if pd.notna(row['Street Address']) else '',
             ', ' + str(row['City']).strip() if pd.notna(row['City']) else '',
             ', ' + str(row['State']).strip() if pd.notna(row['State']) else '',
             ' ' + str(row['ZIP']).strip()[0:5] if pd.notna(row['ZIP']) and len(str(row['ZIP']).strip()) >= 5 else ''
         ]
-        # remove any empty strings and join all parts
+        # Remove any empty strings and join all parts
         address_parts = [part for part in address_parts if part.strip()]
         address = ''.join(address_parts)
 
@@ -38,7 +37,7 @@ def apply_concatenate_coordinates(row):
 
 # Create a list of addresses from a dataframe
 def create_address_list(df):
-    address_parts_cols = ['Address 1', 'Address 2', 'City', 'State', 'ZIP']
+    address_parts_cols = ['Street Address', 'City', 'State', 'ZIP']
     address_col = ['Address']
 
     if len(df.columns) == 5:
@@ -47,7 +46,7 @@ def create_address_list(df):
 
     elif not set(address_parts_cols).issubset(set(df.columns)) and not set(address_col).issubset(set(df.columns)):
         raise Exception('The dataframe must have the following columns:'
-                        '[Address 1, Address 2, City, State, ZIP] or [Address]')
+                        "['Street Address', 'City', 'State', 'ZIP'] or ['Address']")
 
     elif set(address_col).issubset(set(df.columns)):
         addresses = df['Address']
@@ -74,7 +73,8 @@ def create_coordinates_list(df):
 
     # Ensure columns exist
     if not (set(coordinate_parts_cols).issubset(df.columns) or coordinates_col in df.columns):
-        raise Exception('The dataframe must have the following columns: [Longitude, Latitude] or [Coordinates]')
+        raise Exception('The dataframe must have the following columns:'
+                        "['Longitude', 'Latitude'] or ['Coordinates']")
 
     # Handle case where there's only 'Coordinates' column
     if coordinates_col in df.columns:

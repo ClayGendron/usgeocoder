@@ -16,7 +16,7 @@ class Geocoder:
         self.failed_coordinates = None
         self.located_coordinates = None
         self.failed_addresses = None
-        
+
         files = {
             'located_addresses': ['Address', 'Date', 'Longitude', 'Latitude'],
             'failed_addresses': ['Address', 'Date', 'Longitude', 'Latitude'],
@@ -59,7 +59,7 @@ class Geocoder:
             except TypeError:
                 print('Data must be a pandas dataframe, series, or list.')
                 return None
-            
+
     def add_coordinates(self, data):
         if isinstance(data, pd.DataFrame):
             self.coordinates = create_coordinates_list(data)
@@ -77,7 +77,7 @@ class Geocoder:
         if addresses is not None:
             # add addresses to self.addresses if given
             self.add_addresses(addresses)
-        
+
         # load addresses from self.addresses and convert to set
         addresses = set(self.addresses)
         # remove any addresses that have already been geocoded
@@ -85,18 +85,18 @@ class Geocoder:
         failed_addresses = self.failed_addresses['Address'].values
         for seen_addresses in [located_addresses, failed_addresses]:
             addresses = addresses.difference(seen_addresses)
-        
+
         located_df, failed_df = batch_geocoder(data=addresses, direction='forward', n_threads=100)
         self.located_addresses = pd.concat([self.located_addresses, located_df], ignore_index=True)
         self.failed_addresses = pd.concat([self.failed_addresses, failed_df], ignore_index=True)
-        
+
         self.save_data()
-        
+
     def reverse(self, coordinates=None):
         if coordinates is not None:
             # add coordinates to self.coordinates if given
             self.add_coordinates(coordinates)
-        
+
         # load coordinates from self.coordinates and convert to set
         coordinates = set(self.coordinates)
         
