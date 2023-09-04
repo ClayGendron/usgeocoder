@@ -26,9 +26,6 @@ def request_address_geocode(address, benchmark=BENCHMARK, batch=False):
           - Date: The current date of the request.
           - Longitude: Longitude of the geocoded address, or None if geocoding was unsuccessful.
           - Latitude: Latitude of the geocoded address, or None if geocoding was unsuccessful.
-
-      Note:
-      The function will retry the request based on the `timeouts` list if it encounters a timeout exception.
     """
 
     base_geocode_url = 'https://geocoding.geo.census.gov/geocoder/locations/onelineaddress'
