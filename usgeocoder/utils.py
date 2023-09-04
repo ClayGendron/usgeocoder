@@ -1,61 +1,77 @@
 import pandas as pd
 
 
-# Create a new column of the full address
-def apply_concatenate_address(row):
-    try:
-        address_parts = [
-            str(row['Street Address']).strip() if pd.notna(row['Street Address']) else '',
-            ', ' + str(row['City']).strip() if pd.notna(row['City']) else '',
-            ', ' + str(row['State']).strip() if pd.notna(row['State']) else '',
-            ' ' + str(row['ZIP']).strip()[0:5] if pd.notna(row['ZIP']) and len(str(row['ZIP']).strip()) >= 5 else ''
-        ]
-        # Remove any empty strings and join all parts
-        address_parts = [part for part in address_parts if part.strip()]
-        address = ''.join(address_parts)
+def concatenate_address(df):
+    """
+    Function to concatenate address columns.
 
-        return address
+    Parameters:
+    - df (DataFrame): DataFrame containing the columns 'Street Address', 'City', 'State', and 'ZIP'.
 
-    except Exception as e:
-        # Log the error and the row for debugging purposes
-        print(f'Error processing row: {row}. Error: {e}')
-        return None
+    Returns:
+    - Series: A Pandas Series of concatenated addresses.
+    """
 
-
-# Create a new column of longitude and latitude coordinates
-def apply_concatenate_coordinates(row):
-    try:
-        # strip any whitespace and convert to decimal number
-        coordinates = (float(str(row['Longitude']).strip()), float(str(row['Latitude']).strip()))
-        return coordinates
-
-    except Exception as e:
-        # Log the error and the row for debugging purposes
-        print(f'Error processing row: {row}. Error: {e}')
-        return None
+    address_parts = [
+        df['Street Address'].fillna(''),
+        ', ' + df['City'].fillna(''),
+        ', ' + df['State'].fillna(''),
+        ' ' + df['ZIP'].str[:5].fillna('')
+    ]
+    return ''.join(address_parts).str.strip()
 
 
-# Create a list of addresses from a dataframe
+def concatenate_coordinates(df):
+    """
+    Function to create coordinate tuples.
+
+    Parameters:
+    - df (DataFrame): DataFrame containing the columns 'Longitude' and 'Latitude'.
+
+    Returns:
+    - Series: A Pandas Series of (Longitude, Latitude) coordinate tuples.
+    """
+
+    coordinates = list(zip(df['Longitude'], df['Latitude']))
+    return pd.Series(coordinates, index=df.index)
+
+
 def create_address_list(df):
+    """
+    Extract a list of unique addresses from a DataFrame.
+
+    The DataFrame should either contain a single 'Address' column or four separate columns
+    ['Street Address', 'City', 'State', 'ZIP'] for the function to extract and concatenate the addresses.
+
+    Parameters:
+    - df (DataFrame): DataFrame with either 'Address' column or ['Street Address', 'City', 'State', and 'ZIP'] columns.
+
+    Returns:
+    - list: List of unique addresses. Empty addresses are removed from the list.
+
+    Raises:
+    - Exception: If the DataFrame does not have the required columns.
+    - Exception: If no addresses are found after processing.
+    """
+
     address_parts_cols = ['Street Address', 'City', 'State', 'ZIP']
     address_col = ['Address']
 
-    if len(df.columns) == 5:
-        df.columns = address_parts_cols
-        addresses = df.apply(apply_concatenate_address, axis=1)
-
-    elif not set(address_parts_cols).issubset(set(df.columns)) and not set(address_col).issubset(set(df.columns)):
+    # Ensure columns exist
+    if not set(address_parts_cols).issubset(set(df.columns)) and not set(address_col).issubset(set(df.columns)):
         raise Exception('The dataframe must have the following columns:'
-                        "['Street Address', 'City', 'State', 'ZIP'] or ['Address']")
+                        "['Street Address', 'City', 'State', 'ZIP'] or 'Address'")
 
+    # Handle case where there's only 'Address' column
     elif set(address_col).issubset(set(df.columns)):
         addresses = df['Address']
 
+    # Handle case where there are 'Street Address', 'City', 'State', and 'ZIP' columns
     elif set(address_parts_cols).issubset(set(df.columns)):
-        addresses = df.apply(apply_concatenate_address, axis=1)
+        addresses = concatenate_address(df)
 
+    # This should not be reached based on previous checks, but included for clarity.
     else:
-        # This should not be reached based on previous checks, but included for clarity.
         raise Exception('Unexpected columns in dataframe.')
 
     addresses_list = addresses.drop_duplicates().tolist()
@@ -68,13 +84,30 @@ def create_address_list(df):
 
 
 def create_coordinates_list(df):
+    """
+    Extract a list of unique coordinates from a DataFrame.
+
+    The DataFrame should either contain a single 'Coordinates' column (with tuple format) or two separate columns
+    ['Longitude', 'Latitude'] for the function to extract and pair the coordinates.
+
+    Parameters:
+    - df (DataFrame): DataFrame with either 'Coordinates' column or ['Longitude', 'Latitude'] columns.
+
+    Returns:
+    - list: List of unique (Longitude, Latitude) coordinates.
+
+    Raises:
+    - Exception: If the DataFrame does not have the required columns.
+    - Exception: If no coordinates are found after processing.
+    """
+
     coordinate_parts_cols = ['Longitude', 'Latitude']
-    coordinates_col = 'Coordinates'
+    coordinates_col = ['Coordinates']
 
     # Ensure columns exist
-    if not (set(coordinate_parts_cols).issubset(df.columns) or coordinates_col in df.columns):
+    if not (set(coordinate_parts_cols).issubset(df.columns) and not set(coordinates_col).issubset(df.columns)):
         raise Exception('The dataframe must have the following columns:'
-                        "['Longitude', 'Latitude'] or ['Coordinates']")
+                        "['Longitude', 'Latitude'] or 'Coordinates'")
 
     # Handle case where there's only 'Coordinates' column
     if coordinates_col in df.columns:
@@ -84,10 +117,10 @@ def create_coordinates_list(df):
     # Handle case where there are 'Longitude' and 'Latitude' columns
     elif set(coordinate_parts_cols).issubset(df.columns):
         df = df.dropna(subset=coordinate_parts_cols)
-        coordinates = df.apply(apply_concatenate_coordinates, axis=1)
+        coordinates = concatenate_coordinates(df)
 
+    # This should not be reached based on previous checks, but included for clarity.
     else:
-        # This should not be reached based on previous checks, but included for clarity.
         raise Exception('Unexpected columns in dataframe.')
 
     coordinates_list = coordinates.drop_duplicates().tolist()

@@ -12,6 +12,25 @@ timeouts = [0.5, 1, 2, 5]
 
 
 def request_address_geocode(address, benchmark=BENCHMARK, batch=False):
+    """
+      Request geocoding information for a given address using the U.S. Census Geocoder.
+
+      Parameters:
+      - address (str): The address string to geocode.
+      - benchmark (str): The benchmark string for the geocoding request. Default value specified by `BENCHMARK`.
+      - batch (bool): Whether or not the function is being used in a batch process. Default value is False.
+
+      Returns:
+      - dict: A dictionary with the geocoding result, containing the following keys:
+          - Address: The original requested address.
+          - Date: The current date of the request.
+          - Longitude: Longitude of the geocoded address, or None if geocoding was unsuccessful.
+          - Latitude: Latitude of the geocoded address, or None if geocoding was unsuccessful.
+
+      Note:
+      The function will retry the request based on the `timeouts` list if it encounters a timeout exception.
+    """
+
     base_geocode_url = 'https://geocoding.geo.census.gov/geocoder/locations/onelineaddress'
     geocode_params = {
         'benchmark': benchmark,
@@ -22,6 +41,7 @@ def request_address_geocode(address, benchmark=BENCHMARK, batch=False):
     today = date.today().strftime('%Y-%m-%d')
 
     def successful_response(requested_address, response_coordinates):
+        """Construct and return a successful geocode response."""
         longitude = response_coordinates['x']
         latitude = response_coordinates['y']
         response = {
@@ -34,6 +54,7 @@ def request_address_geocode(address, benchmark=BENCHMARK, batch=False):
         return response
 
     def failed_response(requested_address):
+        """Construct and return a failed geocode response."""
         response = {
             'Address': requested_address,
             'Date': today,
@@ -44,12 +65,12 @@ def request_address_geocode(address, benchmark=BENCHMARK, batch=False):
         return response
 
     for t in timeouts:
-        # try request for address geocode
+        # Try request for address geocode
         try:
             geocode_req = requests.get(base_geocode_url, params=geocode_params, timeout=t)
             geocode_data = geocode_req.json()
 
-            # if the request was successful but didn't match an address
+            # If the request was successful but didn't match an address
             if 'result' in geocode_data and not geocode_data['result']['addressMatches']:
                 sleep(sleep_delay)
                 if batch:
@@ -58,13 +79,13 @@ def request_address_geocode(address, benchmark=BENCHMARK, batch=False):
                     print(f'Address {address} did not match any records.')
                     return None
 
-            # if the request was successful and matched an address return first match
+            # If the request was successful and matched an address return first match
             elif 'result' in geocode_data and geocode_data['result']['addressMatches']:
                 coordinates = geocode_data['result']['addressMatches'][0]['coordinates']
                 sleep(sleep_delay)
                 return successful_response(address, coordinates)
 
-        # if request failed, manage the error or exception
+        # Handle JSON decoding error
         except ValueError:
             sleep(sleep_delay)
             if batch:
@@ -73,6 +94,7 @@ def request_address_geocode(address, benchmark=BENCHMARK, batch=False):
                 print('Decoding JSON has failed for address: ' + address)
                 return None
 
+        # Handle request timeout
         except requests.exceptions.Timeout:
             if t == timeouts[-1]:
                 sleep(sleep_delay)
@@ -85,8 +107,8 @@ def request_address_geocode(address, benchmark=BENCHMARK, batch=False):
             sleep(sleep_delay)
             continue
 
+        # Handle any other unforeseen requests-related exceptions
         except requests.exceptions.RequestException as e:
-            # Catch any unforeseen requests-related exceptions
             sleep(sleep_delay)
             if batch:
                 return failed_response(address)
@@ -96,6 +118,25 @@ def request_address_geocode(address, benchmark=BENCHMARK, batch=False):
 
 
 def request_coordinates_geocode(longitude_latitude, benchmark=BENCHMARK, vintage=VINTAGE, batch=False):
+    """
+    Request geographical information based on given coordinates using the U.S. Census Geocoder.
+
+    Parameters:
+    - longitude_latitude (tuple): A tuple of (longitude, latitude) to geocode.
+    - benchmark (str): The benchmark string for the geocoding request. Default value specified by `BENCHMARK`.
+    - vintage (str): The vintage string for the geocoding request. Default value specified by `VINTAGE`.
+    - batch (bool): Whether or not the function is being used in a batch process. Default value is False.
+
+    Returns:
+    - dict: A dictionary with the geocoding result, containing the following keys:
+        - Coordinates: The original requested (longitude, latitude).
+        - Date: The current date of the request.
+        - State: The state where the coordinates are located.
+        - County: The county where the coordinates are located.
+        - Census Block: The census block of the coordinates.
+        - Census Tract: The census tract of the coordinates.
+    """
+
     longitude = longitude_latitude[0]
     latitude = longitude_latitude[1]
 
@@ -111,6 +152,7 @@ def request_coordinates_geocode(longitude_latitude, benchmark=BENCHMARK, vintage
     today = date.today().strftime('%Y-%m-%d')
 
     def successful_response(requested_longitude, requested_latitude, response_geographies):
+        """Construct and return a successful geocode response."""
         response = {
             'Coordinates': (requested_longitude, requested_latitude),
             'Date': today,
@@ -123,6 +165,7 @@ def request_coordinates_geocode(longitude_latitude, benchmark=BENCHMARK, vintage
         return response
 
     def failed_response(req_longitude, req_latitude):
+        """Construct and return a failed geocode response."""
         response = {
             'Coordinates': (req_longitude, req_latitude),
             'Date': today,
@@ -139,7 +182,7 @@ def request_coordinates_geocode(longitude_latitude, benchmark=BENCHMARK, vintage
             geocode_req = requests.get(base_geocode_url, params=geocode_params, timeout=t)
             geocode_data = geocode_req.json()
 
-            # if the request was successful but didn't match an address
+            # If the request was successful but didn't match an address
             if 'result' in geocode_data and len(geocode_data['result']['geographies']) == 0:
                 sleep(sleep_delay)
                 if batch:
@@ -149,11 +192,12 @@ def request_coordinates_geocode(longitude_latitude, benchmark=BENCHMARK, vintage
                     print(f'Coordinates ({longitude}, {latitude}) did not match any records.')
                     return None
 
-            # if the request was successful and contains the 'result' key
+            # If the request was successful and contains the 'result' key
             elif 'result' in geocode_data:
                 geographies = geocode_data['result']['geographies']
                 return successful_response(longitude, latitude, geographies)
 
+        # Handle JSON decoding error
         except ValueError:
             sleep(sleep_delay)
             if batch:
@@ -163,6 +207,7 @@ def request_coordinates_geocode(longitude_latitude, benchmark=BENCHMARK, vintage
                 print(f'Decoding JSON has failed for coordinates: ({longitude}, {latitude})')
                 return None
 
+        # Handle request timeout
         except requests.exceptions.Timeout:
             if t == timeouts[-1]:
                 sleep(sleep_delay)
@@ -177,8 +222,8 @@ def request_coordinates_geocode(longitude_latitude, benchmark=BENCHMARK, vintage
             sleep(sleep_delay)
             continue
 
+        # Handle any other unforeseen requests-related exceptions
         except requests.exceptions.RequestException as e:
-            # Catch any unforeseen requests-related exceptions
             sleep(sleep_delay)
             if batch:
                 print(failed_response(longitude, latitude))
@@ -189,11 +234,25 @@ def request_coordinates_geocode(longitude_latitude, benchmark=BENCHMARK, vintage
 
 
 def batch_geocoder(data, direction='forward', n_threads=1):
-    # raise error if invalid direction
+    """
+    Batch geocoding function that supports both forward and reverse geocoding.
+
+    Parameters:
+    - data (set/list): A collection of addresses or coordinates to be geocoded.
+    - direction (str): Direction of geocoding, 'forward' for addresses, 'reverse' for coordinates. Default is 'forward'.
+    - n_threads (int): Number of threads to be used for parallel processing. Default is 1.
+
+    Returns:
+    - tuple: A tuple with two DataFrames:
+        - located_df: DataFrame with successfully geocoded data.
+        - failed_df: DataFrame with data that couldn't be geocoded.
+    """
+
+    # Raise error if invalid direction
     if direction not in ['forward', 'reverse']:
         raise ValueError('direction must be either "forward" or "reverse"')
 
-    # show warning if n_threads is set very high and ask user if they want to set n_threads to 100
+    # Show warning if n_threads is set very high and ask user if they want to set n_threads to 100
     if n_threads > 100:
         print('WARNING: n_threads is set very high and you may experience rate limits.')
         print('Would you like to set n_threads to the recommended max of 100? (y/n)')
@@ -203,8 +262,10 @@ def batch_geocoder(data, direction='forward', n_threads=1):
         else:
             print('If this process fails, try reducing n_threads to 100 or less.')
 
+    # Convert data to set to remove duplicates
     data = set(data)
 
+    # Define columns for the output DataFrames based on direction
     forward_cols = ['Address', 'Date', 'Longitude', 'Latitude']
     reverse_cols = ['Coordinates', 'Date', 'State', 'County', 'Urban Area', 'Census Block', 'Census Tract']
 
@@ -218,14 +279,14 @@ def batch_geocoder(data, direction='forward', n_threads=1):
         failed_df = pd.DataFrame(columns=reverse_cols)
         request = request_coordinates_geocode
 
-    # build wrapper to set request function to batch mode
+    # Wrapper function to set geocoding requests to batch mode
     def batch_request(batch_data):
         return request(batch_data, batch=True)
 
-    # set up ThreadPoolExecutor to run request functions in parallel
+    # Use ThreadPoolExecutor to execute geocoding requests in parallel
     with ThreadPoolExecutor(max_workers=n_threads) as executor:
         for result in executor.map(batch_request, data):
-            if result[next(reversed(result.keys()))] is not None:  # if the request was successful
+            if result[next(reversed(result.keys()))] is not None:  # Check if geocoding was successful
                 located_df = pd.concat([located_df, pd.DataFrame([result])], ignore_index=True)
             else:
                 failed_df = pd.concat([failed_df, pd.DataFrame([result])], ignore_index=True)
