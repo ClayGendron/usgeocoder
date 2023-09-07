@@ -3,8 +3,8 @@ import pandas as pd
 import os
 from pathlib import Path
 import shutil
-from usgeocoder import (Geocoder, geocode_address, geocode_coordinates, batch_geocode, create_address_list,
-                        create_coordinates_list)
+
+from usgeocoder import Geocoder
 
 # Get root of test directory
 ROOT = Path(os.getcwd())
