@@ -11,7 +11,7 @@ setup(
     version='0.1',
     author='Clay Gendron',
     author_email='chg@claygendron.io',
-    description='A simple and free geocoder for US addresses built on top of the US Census Geocoder API',
+    description='USGeoCoder is an easy and free-to-use package for geocoding US addresses with the US Census Geocoder API',
     long_description=long_description,
     long_description_content_type="text/markdown",
     url='https://github.com/ClayGendron/usgeocoder',
