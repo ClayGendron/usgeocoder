@@ -12,13 +12,24 @@ def concatenate_address(df):
     - Series: A Pandas Series of concatenated addresses.
     """
 
-    address_parts = [
-        df['Street Address'].fillna(''),
-        ', ' + df['City'].fillna(''),
-        ', ' + df['State'].fillna(''),
-        ' ' + df['ZIP'].str[:5].fillna('')
-    ]
-    return ''.join(address_parts).str.strip()
+    df = df.copy()
+    df['Street Address'] = df['Street Address'].fillna('').astype(str)
+    df['City'] = df['City'].fillna('').astype(str)
+    df['State'] = df['State'].fillna('').astype(str)
+    df['ZIP'] = df['ZIP'].fillna('').astype(str)
+
+    # Pad ZIP codes with leading zeros and then slice to take the first 5 characters
+    df['ZIP'] = df['ZIP'].str.zfill(5).str[0:5]
+
+    # Initialize address with 'Street Address'
+    address = df['Street Address']
+
+    # If other address parts are not empty, concatenate with separator
+    address += df['City'].where(df['City'] == '', ', ' + df['City'])
+    address += df['State'].where(df['State'] == '', ', ' + df['State'])
+    address += df['ZIP'].where(df['ZIP'] == '', ' ' + df['ZIP'])
+
+    return address.str.strip()
 
 
 def concatenate_coordinates(df):
@@ -110,7 +121,7 @@ def create_coordinates_list(df):
                         "['Longitude', 'Latitude'] or 'Coordinates'")
 
     # Handle case where there's only 'Coordinates' column
-    if coordinates_col in df.columns:
+    if set(coordinates_col).issubset(df.columns):
         df = df.dropna(subset=[coordinates_col])
         coordinates = df[coordinates_col]
 

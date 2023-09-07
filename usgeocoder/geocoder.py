@@ -1,11 +1,12 @@
 import pandas as pd
-from pyprojroot import here
+import os
+from pathlib import Path
 
 from .utils import create_address_list, create_coordinates_list
-from .census_api import batch_geocoder
+from .census_api import batch_geocode
 
-import warnings
-warnings.filterwarnings('ignore', category=UserWarning, module='pyprojroot')
+
+ROOT = Path(os.getcwd())
 
 
 class Geocoder:
@@ -29,6 +30,7 @@ class Geocoder:
         self.failed_coordinates = None
         self.located_coordinates = None
         self.failed_addresses = None
+        print(ROOT)
 
         files = {
             'located_addresses': ['Address', 'Date', 'Longitude', 'Latitude'],
@@ -37,14 +39,14 @@ class Geocoder:
             'failed_coordinates': ['Coordinates', 'Date', 'State', 'County', 'Census Block', 'Census Tract'],
         }
 
-        if here('geocoder').exists():
+        if (ROOT / 'geocoder').exists():
             for file_name, columns in files.items():
                 setattr(self, file_name, self.load_or_create_csv(file_name, columns))
         else:
-            here('geocoder').mkdir()
+            (ROOT / 'geocoder').mkdir()
             for file_name, columns in files.items():
                 df = pd.DataFrame(columns=columns)
-                df.to_csv(here(f'geocoder/{file_name}.csv'), index=False)
+                df.to_csv(ROOT / 'geocoder' / f'{file_name}.csv', index=False)
                 setattr(self, file_name, df)
 
     @staticmethod
@@ -60,7 +62,7 @@ class Geocoder:
         - DataFrame: Loaded data or an empty DataFrame with specified columns.
         """
 
-        path = here(f'geocoder/{file_name}.csv')
+        path = ROOT / 'geocoder' / f'{file_name}.csv'
         if path.exists():
             return pd.read_csv(path)
         
@@ -129,12 +131,12 @@ class Geocoder:
         for seen_addresses in [located_addresses, failed_addresses]:
             addresses = addresses.difference(seen_addresses)
 
-        located_df, failed_df = batch_geocoder(data=addresses, direction='forward', n_threads=100)
+        located_df, failed_df = batch_geocode(data=addresses, direction='forward', n_threads=100)
         self.located_addresses = pd.concat([self.located_addresses, located_df], ignore_index=True)
         self.failed_addresses = pd.concat([self.failed_addresses, failed_df], ignore_index=True)
 
         # Add geocoding results to self.coordinates if not already there
-        if self.coordinates is None:
+        if len(self.coordinates) == 0:
             self.add_coordinates(self.located_addresses)
 
         self.save_data()
@@ -160,7 +162,7 @@ class Geocoder:
         for seen_coordinates in [located_coordinates, failed_coordinates]:
             coordinates = coordinates.difference(seen_coordinates)
         
-        located_df, failed_df = batch_geocoder(data=coordinates, direction='reverse', n_threads=100)
+        located_df, failed_df = batch_geocode(data=coordinates, direction='reverse', n_threads=100)
         self.located_coordinates = pd.concat([self.located_coordinates, located_df], ignore_index=True)
         self.failed_coordinates = pd.concat([self.failed_coordinates, failed_df], ignore_index=True)
         
@@ -168,10 +170,10 @@ class Geocoder:
 
     def save_data(self):
         """ Save geocoding results to CSV files. """
-        self.located_addresses.to_csv(here('geocoder/located_addresses.csv'), index=False)
-        self.failed_addresses.to_csv(here('geocoder/failed_addresses.csv'), index=False)
-        self.located_coordinates.to_csv(here('geocoder/located_coordinates.csv'), index=False)
-        self.failed_coordinates.to_csv(here('geocoder/failed_coordinates.csv'), index=False)
+        self.located_addresses.to_csv(ROOT / 'geocoder/located_addresses.csv', index=False)
+        self.failed_addresses.to_csv(ROOT / 'geocoder/failed_addresses.csv', index=False)
+        self.located_coordinates.to_csv(ROOT / 'geocoder/located_coordinates.csv', index=False)
+        self.failed_coordinates.to_csv(ROOT / 'geocoder/failed_coordinates.csv', index=False)
 
     def delete_data(self, records='failed', time=365):
         """

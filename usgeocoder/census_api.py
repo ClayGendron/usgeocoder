@@ -11,7 +11,7 @@ sleep_delay = 0.1
 timeouts = [0.5, 1, 2, 5]
 
 
-def request_address_geocode(address, benchmark=BENCHMARK, batch=False):
+def geocode_address(address, benchmark=BENCHMARK, batch=False):
     """
       Request geocoding information for a given address using the U.S. Census Geocoder.
 
@@ -114,7 +114,7 @@ def request_address_geocode(address, benchmark=BENCHMARK, batch=False):
                 return None
 
 
-def request_coordinates_geocode(longitude_latitude, benchmark=BENCHMARK, vintage=VINTAGE, batch=False):
+def geocode_coordinates(longitude_latitude, benchmark=BENCHMARK, vintage=VINTAGE, batch=False):
     """
     Request geographical information based on given coordinates using the U.S. Census Geocoder.
 
@@ -230,7 +230,7 @@ def request_coordinates_geocode(longitude_latitude, benchmark=BENCHMARK, vintage
                 return None
 
 
-def batch_geocoder(data, direction='forward', n_threads=1):
+def batch_geocode(data, direction='forward', n_threads=1):
     """
     Batch geocoding function that supports both forward and reverse geocoding.
 
@@ -269,12 +269,12 @@ def batch_geocoder(data, direction='forward', n_threads=1):
     if direction == 'forward':
         located_df = pd.DataFrame(columns=forward_cols)
         failed_df = pd.DataFrame(columns=forward_cols)
-        request = request_address_geocode
+        request = geocode_address
 
     elif direction == 'reverse':
         located_df = pd.DataFrame(columns=reverse_cols)
         failed_df = pd.DataFrame(columns=reverse_cols)
-        request = request_coordinates_geocode
+        request = geocode_coordinates
 
     # Wrapper function to set geocoding requests to batch mode
     def batch_request(batch_data):
