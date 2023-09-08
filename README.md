@@ -30,7 +30,7 @@ If this package helps you, I would love to hear from you! And I would love it ev
 
 ## Installation
 
-Make sure you have Python 3 installed along with the pandas library.
+Make sure you have Python 3 installed, along with the pandas library.
 
 ```bash
 pip install usgeocoder
