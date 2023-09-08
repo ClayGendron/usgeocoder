@@ -81,7 +81,7 @@ The order of (Longitude, Latitude) was chosen because it is consistent with the 
 from usgeocoder import batch_geocoder
 ```
 
-The `batch_geocoder` function will allow you to parrelize the requests in the `geocode_address` and `geocode_coordinates` functions.
+The `batch_geocoder` function will allow you to parallelize the requests in the `geocode_address` and `geocode_coordinates` functions.
 
 ```python
 # Forward
