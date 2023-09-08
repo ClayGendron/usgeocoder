@@ -70,7 +70,7 @@ coordinates = (-70.207895, 43.623068)
 response = geocode_coordinates(coordinates)
 ```
 
-Tip: Notice coordinate pairs are stored as (Longitude, Latitude) or (x, y).
+**Note:** Notice coordinate pairs are stored as (Longitude, Latitude) or (x, y).
 If results are not as expected, try switching the order of the coordinates.
 For instance, Google Maps shows points as (Latitude, Longitude) or (y, x).
 The order of (Longitude, Latitude) was chosen because it is consistent with the mathematical convention of plotting points on a Cartesian plane, and it is how many GIS systems order coordinate points.
@@ -93,7 +93,7 @@ coordinates = [(-70.207895, 43.623068), (-71.469826, 43.014701)]
 located_coordinates, failed_coordinates = batch_geocoder(coordinates, direction='reverse', n_threads=100)
 ```
 
-Tip: The `batch_geocoder` function has been optimized to run at a max of 100 for `n_threads`.
+**Note:** The `batch_geocoder` function has been optimized to run at a max of 100 for `n_threads`.
 Increasing `n_threads` beyond 100 will increase the likelihood of hitting a rate limit error.
 
 ## Geocoder Class
