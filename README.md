@@ -2,18 +2,18 @@
 <img src="https://raw.githubusercontent.com/claygendron/usgeocoder/main/usgeocoder_cover_art.png" width="1200">
 </h1>
 
-## Table of Contents
+# Table of Contents
 
 1. [Overview](#overview)
 2. [Installation](#installation)
 3. [Usage](#usage)
-   - [Geocoder Class](#geocoder-class)
-   - [Batch Geocoder Function](#batch-geocoder-function)
    - [API Request Functions](#api-request-functions)
-4. [Contribute](#contribute)
-5. [License](#license)
+   - [Batch Geocoder Function](#batch-geocoder-function)
+   - [Geocoder Class](#geocoder-class)
+5. [Contribute](#contribute)
+6. [License](#license)
 
-## Overview
+# Overview
 
 Thank you for your interest in USGeoCoder package!
 USGeoCoder is an easy and free-to-use package for geocoding US addresses with the US Census Geocoder API.
@@ -30,7 +30,7 @@ If this package helps you, I would love to hear from you! And I would love it ev
 
 **Note:** This package is in a Beta state, so please be aware that there may be bugs or issues. Thank you for your patience.
 
-## Installation
+# Installation
 
 Make sure you have Python 3 installed, along with the pandas library.
 
@@ -38,17 +38,65 @@ Make sure you have Python 3 installed, along with the pandas library.
 pip install usgeocoder
 ```
 
-## Usage
+# Usage
 
 This package consists of three main sets of functions and classes.
 
-- Geocoder Class (Data Manager for Batch Geocoder)
-- Batch Geocoder Function (Parallelize API Request Functions)
 - API Request Functions (Forward and Reverse)
+- Batch Geocoder Function (Parallelize API Request Functions)
+- Geocoder Class (Data Manager for Batch Geocoder)
 
 The components will be detailed below in order.
 
-### Geocoder Class
+## API Request Functions
+
+```python
+from usgeocoder import geocode_address, geocode_coordinates
+```
+
+It is very simple to run a single request to geocode an address or a pair of coordinates.
+
+Addresses should look like this: `123 Main St, City, State Zip`.
+
+Coordinates should look like this: `(Longitude, Latitude)`.
+
+```python
+# Forward
+address = '123 Main St, City, State Zip'
+response = geocode_address(address)
+
+# Reverse
+coordinates = (-70.207895, 43.623068)
+response = geocode_coordinates(coordinates)
+```
+
+Tip: Notice coordinate pairs are stored as (Longitude, Latitude) or (x, y).
+If results are not as expected, try switching the order of the coordinates.
+For instance, Google Maps shows points as (Latitude, Longitude) or (y, x).
+The order of (Longitude, Latitude) was chosen because it is consistent with the mathematical convention of plotting points on a Cartesian plane, and it is how many GIS systems order coordinate points.
+
+## Batch Geocoder Function
+
+```python
+from usgeocoder import batch_geocoder
+```
+
+The `batch_geocoder` function will allow you to parrelize the requests in the `geocode_address` and `geocode_coordinates` functions.
+
+```python
+# Forward
+addresses = ['123 Main St, City, State Zip', '456 Main St, City, State Zip']
+located_addresses, failed_addresses = batch_geocoder(addresses, direction='forward', n_threads=100)
+
+# Reverse
+coordinates = [(-70.207895, 43.623068), (-71.469826, 43.014701)]
+located_coordinates, failed_coordinates = batch_geocoder(coordinates, direction='reverse', n_threads=100)
+```
+
+Tip: The `batch_geocoder` function has been optimized to run at a max of 100 for `n_threads`.
+Increasing `n_threads` beyond 100 will increase the likelihood of hitting a rate limit error.
+
+## Geocoder Class
 
 ```python
 from usgeocoder import Geocoder
@@ -91,7 +139,6 @@ geo.add_addresses(df['Address'])
 ```
 
 If you have a list or series of full addresses, you can also easily add those to your `Geocoder` class.
-Addresses should look like this: `123 Main St, City, State Zip`.
 
 ```python
 # Add a list or pd.Series of addresses
@@ -100,7 +147,6 @@ geo.add_addresses(addresses)
 ```
 
 These steps work just the same for reverse geocoding with coordinates.
-Coordinates should look like this: `(-70.207895, 43.623068)`.
 
 ```python
 # Add a dataframe with coordinate parts
@@ -140,55 +186,10 @@ df_merged = df.merge(geo.located_addresses, how='left', on='Address')
 df_merged = df.merge(geo.located_coordinates, how='left', on='Coordinates')
 ```
 
-### Batch Geocoder Function
-
-```python
-from usgeocoder import batch_geocoder
-```
-
-When running `geo.forward()` or `geo.reverse()`, the method calls the `batch_geocoder` function under the hood.
-If you want to run the geocoder on its own, you can do that like so:
-
-```python
-# Forward
-addresses = ['123 Main St, City, State Zip', '456 Main St, City, State Zip']
-located_addresses, failed_addresses = batch_geocoder(addresses, direction='forward', n_threads=100)
-
-# Reverse
-coordinates = [(-70.207895, 43.623068), (-71.469826, 43.014701)]
-located_coordinates, failed_coordinates = batch_geocoder(coordinates, direction='reverse', n_threads=100)
-```
-
-Tip: The `batch_geocoder` function has been optimized to run at a max of 100 for `n_threads`.
-Increasing `n_threads` beyond 100 will increase the likelihood of hitting a rate limit error.
-
-### API Request Functions
-
-```python
-from usgeocoder import geocode_address, geocode_coordinates
-```
-
-If your preference is to run the API request on a single address or set of coordinates, you can do that like so:
-
-```python
-# Forward
-address = '123 Main St, City, State Zip'
-response = geocode_address(address)
-
-# Reverse
-coordinates = (-70.207895, 43.623068)
-response = geocode_coordinates(coordinates)
-```
-
-Tip: Coordinate pairs are stored as (Longitude, Latitude) or (x, y).
-If results are not as expected, try switching the order of the coordinates.
-For instance, you will notice that Google Maps shows points as (Latitude, Longitude) or (y, x).
-The order of (Longitude, Latitude) was chosen to work better with GeoJSON files, amoung other reasons.
-
-## Contribute
+# Contribute
 
 If you would like to make this package better, please consider contributing 😊
 
-## License
+# License
 
 [MIT](https://choosealicense.com/licenses/mit/)
