@@ -13,13 +13,37 @@ class Geocoder:
     """
     A class to manage the geocoding process by performing forward and reverse geocoding and saving the results locally.
 
-    Attributes:
-    - addresses (pd.Series): Series of addresses to be geocoded.
-    - coordinates (pd.Series): Series of coordinates for reverse geocoding.
-    - located_addresses (DataFrame): Addresses that have been successfully geocoded.
-    - failed_coordinates (DataFrame): Coordinates that failed reverse geocoding.
-    - located_coordinates (DataFrame): Coordinates that have been successfully reverse geocoded.
-    - failed_addresses (DataFrame): Addresses that failed geocoding.
+    Attributes
+    ----------
+    addresses : pd.Series
+        Series of addresses to be geocoded.
+    coordinates : pd.Series
+        Series of coordinates for reverse geocoding.
+    located_addresses : pd.DataFrame
+        Addresses that have been successfully geocoded.
+    failed_coordinates : pd.DataFrame
+        Coordinates that failed reverse geocoding.
+    located_coordinates : pd.DataFrame
+        Coordinates that have been successfully reverse geocoded.
+    failed_addresses : pd.DataFrame
+        Addresses that failed geocoding.
+
+    Methods
+    -------
+    load_or_create_csv(file_name, columns) -> pd.DataFrame
+        Load an existing CSV file or create a new one if it doesn't exist.
+    add_addresses(data)
+        Add addresses to the Geocoder instance.
+    add_coordinates(data)
+        Add coordinates to the Geocoder instance.
+    forward(addresses=None)
+        Conduct forward geocoding on the provided addresses.
+    reverse(coordinates=None)
+        Conduct reverse geocoding on the provided coordinates.
+    save_data()
+        Save geocoding results to CSV files.
+    delete_data(records='failed', time=365)
+        Filter out geocoding results older than the specified time.
     """
 
     def __init__(self):
@@ -54,12 +78,17 @@ class Geocoder:
         """
         Load an existing CSV file or create a new one if it doesn't exist.
 
-        Parameters:
-        - file_name (str): The name of the CSV file to be loaded or created.
-        - columns (list of str): List of column names for the CSV file.
+        Parameters
+        ----------
+        file_name : str
+            The name of the CSV file to be loaded or created.
+        columns : list of str
+            List of column names for the CSV file.
 
-        Returns:
-        - DataFrame: Loaded data or an empty DataFrame with specified columns.
+        Returns
+        -------
+        pd.DataFrame
+            Loaded data or an empty DataFrame with specified columns.
         """
 
         path = ROOT / 'geocoder' / f'{file_name}.csv'
@@ -77,9 +106,12 @@ class Geocoder:
         """
         Add addresses to the Geocoder instance.
 
-        Parameters:
-            - data (pd.DataFrame, pd.Series, list): Data containing addresses.
+        Parameters
+        ----------
+        data : pd.DataFrame, pd.Series, list
+            Data containing addresses.
         """
+
         if isinstance(data, pd.DataFrame):
             self.addresses = create_address_list(data)
         elif isinstance(data, pd.Series):
@@ -96,9 +128,12 @@ class Geocoder:
         """
         Add coordinates to the Geocoder instance.
 
-        Parameters:
-            - data (pd.DataFrame, pd.Series, list): Data containing coordinates.
+        Parameters
+        ----------
+        data : pd.DataFrame, pd.Series, list
+            Data containing coordinates.
         """
+
         if isinstance(data, pd.DataFrame):
             self.coordinates = create_coordinates_list(data)
         elif isinstance(data, pd.Series):
@@ -115,8 +150,14 @@ class Geocoder:
         """
         Conduct forward geocoding on the provided addresses.
 
-        Parameters:
-        - addresses (pd.DataFrame, pd.Series, optional): Uses addresses stored in the instance if not provided.
+        Parameters
+        ----------
+        addresses : pd.DataFrame, pd.Series, optional
+            Uses addresses stored in the instance if not provided.
+
+        Raises
+        ------
+        ValueError: If no addresses are successfully geocoded.
         """
 
         if addresses is not None:
@@ -132,8 +173,27 @@ class Geocoder:
             addresses = addresses.difference(seen_addresses)
 
         located_df, failed_df = batch_geocode(data=addresses, direction='forward', n_threads=100)
-        self.located_addresses = pd.concat([self.located_addresses, located_df], ignore_index=True)
-        self.failed_addresses = pd.concat([self.failed_addresses, failed_df], ignore_index=True)
+
+        # Add geocoding results to self.located_addresses and self.failed_addresses
+        # Raise an error if no addresses were successfully geocoded
+        if located_df.empty:
+            raise ValueError('No addresses were successfully geocoded. Review Geocoder.addresses data.')
+        # If self.located_addresses is empty, set it to located_df
+        elif self.located_addresses.empty:
+            self.located_addresses = located_df.copy()
+        # Otherwise, concatenate located_df to self.located_addresses
+        else:
+            self.located_addresses = pd.concat([self.located_addresses, located_df], ignore_index=True)
+
+        # Pass if failed_df is empty
+        if failed_df.empty:
+            pass
+        # If self.failed_addresses is empty, set it to failed_df
+        elif self.failed_addresses.empty:
+            self.failed_addresses = failed_df.copy()
+        # Otherwise, concatenate failed_df to self.failed_addresses
+        else:
+            self.failed_addresses = pd.concat([self.failed_addresses, failed_df], ignore_index=True)
 
         # Add geocoding results to self.coordinates if not already there
         if len(self.coordinates) == 0:
@@ -145,8 +205,14 @@ class Geocoder:
         """
         Conduct reverse geocoding on the provided coordinates.
 
-        Parameters:
-        - coordinates (pd.DataFrame, pd.Series, optional): Uses coordinates stored in the instance if not provided.
+        Parameters
+        ----------
+        coordinates : pd.DataFrame, pd.Series, optional
+            Uses coordinates stored in the instance if not provided.
+
+        Raises
+        ------
+        ValueError: If no coordinates are successfully geocoded.
         """
 
         if coordinates is not None:
@@ -163,8 +229,27 @@ class Geocoder:
             coordinates = coordinates.difference(seen_coordinates)
         
         located_df, failed_df = batch_geocode(data=coordinates, direction='reverse', n_threads=100)
-        self.located_coordinates = pd.concat([self.located_coordinates, located_df], ignore_index=True)
-        self.failed_coordinates = pd.concat([self.failed_coordinates, failed_df], ignore_index=True)
+
+        # Add geocoding results to self.located_coordinates and self.failed_coordinates
+        # Raise an error if no coordinates were successfully geocoded
+        if located_df.empty:
+            raise ValueError('No coordinates were successfully geocoded. Review Geocoder.coordinates data.')
+        # If self.located_coordinates is empty, set it to located_df
+        elif self.located_coordinates.empty:
+            self.located_coordinates = located_df.copy()
+        # Otherwise, concatenate located_df to self.located_coordinates
+        else:
+            self.located_coordinates = pd.concat([self.located_coordinates, located_df], ignore_index=True)
+
+        # Pass if failed_df is empty
+        if failed_df.empty:
+            pass
+        # If self.failed_coordinates is empty, set it to failed_df
+        elif self.failed_coordinates.empty:
+            self.failed_coordinates = failed_df.copy()
+        # Otherwise, concatenate failed_df to self.failed_coordinates
+        else:
+            self.failed_coordinates = pd.concat([self.failed_coordinates, failed_df], ignore_index=True)
         
         self.save_data()
 
@@ -179,14 +264,21 @@ class Geocoder:
         """
         Filter out geocoding results older than the specified time.
 
-        Parameters:
-        - records (str): Type of records to filter. Options are 'failed', 'located', or 'all'.
-        - time (int, str): Number of days to keep geocoding results. Can also be 'week', 'month', 'year', or 'all'.
+        Parameters
+        ----------
+        records : str, optional
+            Type of records to filter. Options are 'failed', 'located', or 'all'. Default is 'failed'.
+        time : int or str, optional
+            Number of days to keep geocoding results. Can also be 'week', 'month', 'year', or 'all'. Default is 365.
 
-        Raises:
-        - ValueError: If time is not an integer or one of 'week', 'month', 'year', or 'all'.
-        - ValueError: If records is not 'failed', 'located', or 'all'.
+        Raises
+        ------
+        ValueError
+            If time is not an integer or one of 'week', 'month', 'year', or 'all'.
+        ValueError
+            If records is not 'failed', 'located', or 'all'.
         """
+
         # Validate and interpret the 'time' parameter
         time_map = {'week': 7, 'month': 30, 'year': 365, 'all': 999999}
         time = time_map.get(time, time)

@@ -13,19 +13,33 @@ timeouts = [0.5, 1, 2, 5]
 
 def geocode_address(address, benchmark=BENCHMARK, batch=False):
     """
-      Request geocoding information for a given address using the U.S. Census Geocoder.
+    Request geocoding information for a given address using the U.S. Census Geocoder.
 
-      Parameters:
-      - address (str): The address string to geocode.
-      - benchmark (str): The benchmark string for the geocoding request. Default value specified by `BENCHMARK`.
-      - batch (bool): Whether or not the function is being used in a batch process. Default value is False.
+    Parameters
+    ----------
+    address : str
+        The address string to geocode.
+    benchmark : str, optional
+        The benchmark string for the geocoding request. Default value is specified by `BENCHMARK`.
+    batch : bool, optional
+        Whether or not the function is being used in a batch process. Default value is False.
 
-      Returns:
-      - dict: A dictionary with the geocoding result, containing the following keys:
-          - Address: The original requested address.
-          - Date: The current date of the request.
-          - Longitude: Longitude of the geocoded address, or None if geocoding was unsuccessful.
-          - Latitude: Latitude of the geocoded address, or None if geocoding was unsuccessful.
+    Returns
+    -------
+    dict
+        A dictionary with the geocoding result, containing the following keys:
+        - Address : str
+            The original requested address.
+        - Date : str
+            The current date of the request.
+        - Longitude : float or None
+            Longitude of the geocoded address, or None if geocoding was unsuccessful.
+        - Latitude : float or None
+            Latitude of the geocoded address, or None if geocoding was unsuccessful.
+
+    Examples
+    --------
+    # TODO: Provide example if desired.
     """
 
     base_geocode_url = 'https://geocoding.geo.census.gov/geocoder/locations/onelineaddress'
@@ -38,7 +52,7 @@ def geocode_address(address, benchmark=BENCHMARK, batch=False):
     today = date.today().strftime('%Y-%m-%d')
 
     def successful_response(requested_address, response_coordinates):
-        """Construct and return a successful geocode response."""
+        """ Construct and return a successful geocode response. """
         longitude = response_coordinates['x']
         latitude = response_coordinates['y']
         response = {
@@ -51,7 +65,7 @@ def geocode_address(address, benchmark=BENCHMARK, batch=False):
         return response
 
     def failed_response(requested_address):
-        """Construct and return a failed geocode response."""
+        """ Construct and return a failed geocode response. """
         response = {
             'Address': requested_address,
             'Date': today,
@@ -118,20 +132,37 @@ def geocode_coordinates(longitude_latitude, benchmark=BENCHMARK, vintage=VINTAGE
     """
     Request geographical information based on given coordinates using the U.S. Census Geocoder.
 
-    Parameters:
-    - longitude_latitude (tuple): A tuple of (longitude, latitude) to geocode.
-    - benchmark (str): The benchmark string for the geocoding request. Default value specified by `BENCHMARK`.
-    - vintage (str): The vintage string for the geocoding request. Default value specified by `VINTAGE`.
-    - batch (bool): Whether or not the function is being used in a batch process. Default value is False.
+    Parameters
+    ----------
+    longitude_latitude : tuple of (float, float)
+        A tuple of (longitude, latitude) to geocode.
+    benchmark : str, optional
+        The benchmark string for the geocoding request. Default value is specified by `BENCHMARK`.
+    vintage : str, optional
+        The vintage string for the geocoding request. Default value is specified by `VINTAGE`.
+    batch : bool, optional
+        Whether or not the function is being used in a batch process. Default value is False.
 
-    Returns:
-    - dict: A dictionary with the geocoding result, containing the following keys:
-        - Coordinates: The original requested (longitude, latitude).
-        - Date: The current date of the request.
-        - State: The state where the coordinates are located.
-        - County: The county where the coordinates are located.
-        - Census Block: The census block of the coordinates.
-        - Census Tract: The census tract of the coordinates.
+    Returns
+    -------
+    dict
+        A dictionary with the geocoding result, containing:
+        - Coordinates : tuple of (float, float)
+            The original requested (longitude, latitude).
+        - Date : str
+            The current date of the request.
+        - State : str or None
+            The state where the coordinates are located, or None if geocoding was unsuccessful.
+        - County : str or None
+            The county where the coordinates are located, or None if geocoding was unsuccessful.
+        - Census Block : str or None
+            The census block of the coordinates, or None if geocoding was unsuccessful.
+        - Census Tract : str or None
+            The census tract of the coordinates, or None if geocoding was unsuccessful.
+
+    Examples
+    --------
+    # TODO: Provide example if desired.
     """
 
     longitude = longitude_latitude[0]
@@ -149,7 +180,7 @@ def geocode_coordinates(longitude_latitude, benchmark=BENCHMARK, vintage=VINTAGE
     today = date.today().strftime('%Y-%m-%d')
 
     def successful_response(requested_longitude, requested_latitude, response_geographies):
-        """Construct and return a successful geocode response."""
+        """ Construct and return a successful geocode response. """
         response = {
             'Coordinates': (requested_longitude, requested_latitude),
             'Date': today,
@@ -234,15 +265,40 @@ def batch_geocode(data, direction='forward', n_threads=1):
     """
     Batch geocoding function that supports both forward and reverse geocoding.
 
-    Parameters:
-    - data (set/list): A collection of addresses or coordinates to be geocoded.
-    - direction (str): Direction of geocoding, 'forward' for addresses, 'reverse' for coordinates. Default is 'forward'.
-    - n_threads (int): Number of threads to be used for parallel processing. Default is 1.
+    Parameters
+    ----------
+    data : list or set of str or tuple
+        A collection of addresses (for forward geocoding) or coordinates (for reverse geocoding) to be geocoded.
+    direction : str, optional
+        Direction of geocoding:
+        - 'forward' for addresses.
+        - 'reverse' for coordinates.
+        Default is 'forward'.
+    n_threads : int, optional
+        Number of threads to be used for parallel processing. Default is 1.
 
-    Returns:
-    - tuple: A tuple with two DataFrames:
-        - located_df: DataFrame with successfully geocoded data.
-        - failed_df: DataFrame with data that couldn't be geocoded.
+    Returns
+    -------
+    located_df : pd.DataFrame
+        DataFrame with successfully geocoded data. Columns vary based on `direction`:
+        - 'forward': ['Address', 'Date', 'Longitude', 'Latitude']
+        - 'reverse': ['Coordinates', 'Date', 'State', 'County', 'Urban Area', 'Census Block', 'Census Tract']
+    failed_df : pd.DataFrame
+        DataFrame with data that couldn't be geocoded. Columns are consistent with `located_df`.
+
+    Raises
+    ------
+    ValueError
+        If the `direction` parameter is neither 'forward' nor 'reverse'.
+
+    Notes
+    -----
+    If `n_threads` is set higher than 100, a warning will be displayed prompting the user to consider
+    using a recommended maximum of 100 threads to avoid potential rate limits.
+
+    Examples
+    --------
+    # TODO: Provide example if desired.
     """
 
     # Raise error if invalid direction
@@ -266,26 +322,34 @@ def batch_geocode(data, direction='forward', n_threads=1):
     forward_cols = ['Address', 'Date', 'Longitude', 'Latitude']
     reverse_cols = ['Coordinates', 'Date', 'State', 'County', 'Urban Area', 'Census Block', 'Census Tract']
 
+    # Select geocoding function based on direction
+    located_df = pd.DataFrame()
     if direction == 'forward':
-        located_df = pd.DataFrame(columns=forward_cols)
-        failed_df = pd.DataFrame(columns=forward_cols)
         request = geocode_address
+        output_cols = forward_cols
 
     elif direction == 'reverse':
-        located_df = pd.DataFrame(columns=reverse_cols)
-        failed_df = pd.DataFrame(columns=reverse_cols)
         request = geocode_coordinates
+        output_cols = reverse_cols
 
     # Wrapper function to set geocoding requests to batch mode
     def batch_request(batch_data):
         return request(batch_data, batch=True)
 
+    # Initialize empty lists to hold results
+    located_results = []
+    failed_results = []
+
     # Use ThreadPoolExecutor to execute geocoding requests in parallel
     with ThreadPoolExecutor(max_workers=n_threads) as executor:
         for result in executor.map(batch_request, data):
-            if result[next(reversed(result.keys()))] is not None:  # Check if geocoding was successful
-                located_df = pd.concat([located_df, pd.DataFrame([result])], ignore_index=True)
+            if result[next(reversed(result.keys()))] is not None:
+                located_results.append(result)
             else:
-                failed_df = pd.concat([failed_df, pd.DataFrame([result])], ignore_index=True)
+                failed_results.append(result)
+
+    # Convert lists to DataFrames
+    located_df = pd.DataFrame(located_results, columns=output_cols)
+    failed_df = pd.DataFrame(failed_results, columns=output_cols)
 
     return located_df, failed_df

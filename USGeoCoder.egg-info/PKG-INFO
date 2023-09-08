@@ -1,0 +1,28 @@
+Metadata-Version: 2.1
+Name: USGeoCoder
+Version: 0.1
+Summary: USGeoCoder is an easy and free-to-use package for geocoding US addresses with the US Census Geocoder API
+Home-page: https://github.com/ClayGendron/usgeocoder
+Author: Clay Gendron
+Author-email: chg@claygendron.io
+Project-URL: Source Code, https://github.com/ClayGendron/usgeocoder/
+Project-URL: Documentation, https://github.com/ClayGendron/usgeocoder/
+Keywords: geocoding,geocoder,geospatial,US,census,api,address,coordinates,batch processing
+Classifier: Development Status :: Beta
+Classifier: Intended Audience :: Developers
+Classifier: Topic :: Software Development :: Libraries
+Classifier: Topic :: Utilities
+Classifier: Topic :: Geocoding
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.6
+Classifier: Programming Language :: Python :: 3.7
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: pandas~=2.1.0
+Requires-Dist: requests~=2.31.0
+
+# usgeocoder
+USGeoCoder is an easy and free-to-use package for geocoding US addresses with the US Census Geocoder API.

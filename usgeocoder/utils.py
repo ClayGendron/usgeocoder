@@ -3,13 +3,31 @@ import pandas as pd
 
 def concatenate_address(df):
     """
-    Function to concatenate address columns.
+    Create a series of concatenated address components into a single formatted address string.
 
     Parameters:
-    - df (DataFrame): DataFrame containing the columns 'Street Address', 'City', 'State', and 'ZIP'.
+    ----------
+    df : pd.DataFrame
+        A DataFrame containing the columns 'Street Address', 'City', 'State',
+        and 'ZIP'.
 
     Returns:
-    - Series: A Pandas Series of concatenated addresses.
+    -------
+    pd.Series
+        A Pandas Series containing the concatenated addresses, where each entry
+        corresponds to a row in the input DataFrame.
+
+    Example:
+    --------
+    df = pd.DataFrame({
+        'Street Address': ['123 Main St'],
+        'City': ['Portland'],
+        'State': ['ME'],
+        'ZIP': ['04101']
+    })
+    concatenate_address(df)
+    0    123 Main St, Portland, ME 04101
+    Name: Address, dtype: object
     """
 
     df = df.copy()
@@ -34,13 +52,28 @@ def concatenate_address(df):
 
 def concatenate_coordinates(df):
     """
-    Function to create coordinate tuples.
+    Create a series of (Longitude, Latitude) coordinate tuples from a DataFrame.
 
     Parameters:
-    - df (DataFrame): DataFrame containing the columns 'Longitude' and 'Latitude'.
+    ----------
+    df : pd.DataFrame
+        A DataFrame containing the columns 'Longitude' and 'Latitude'.
 
     Returns:
-    - Series: A Pandas Series of (Longitude, Latitude) coordinate tuples.
+    -------
+    pd.Series
+        A Pandas Series containing the (Longitude, Latitude) tuples, where each
+        entry corresponds to a row in the input DataFrame.
+
+    Example:
+    --------
+    df = pd.DataFrame({
+        'Longitude': [43.623068],
+        'Latitude': [-70.207895]
+    })
+    concatenate_coordinates(df)
+    0    (43.623068, -70.207895)
+    Name: Coordinates, dtype: object
     """
 
     coordinates = list(zip(df['Longitude'], df['Latitude']))
@@ -55,14 +88,25 @@ def create_address_list(df):
     ['Street Address', 'City', 'State', 'ZIP'] for the function to extract and concatenate the addresses.
 
     Parameters:
-    - df (DataFrame): DataFrame with either 'Address' column or ['Street Address', 'City', 'State', and 'ZIP'] columns.
+    ----------
+    df : pd.DataFrame
+        DataFrame with either 'Address' column or ['Street Address', 'City', 'State', and 'ZIP'] columns.
 
     Returns:
-    - list: List of unique addresses. Empty addresses are removed from the list.
+    -------
+    list
+        List of unique addresses. Empty addresses are removed from the list.
 
     Raises:
-    - Exception: If the DataFrame does not have the required columns.
-    - Exception: If no addresses are found after processing.
+    ------
+    Exception
+        If the DataFrame does not have the required columns.
+    Exception
+        If no addresses are found after processing.
+
+    Example:
+    --------
+    # TODO Provide example if desired.
     """
 
     address_parts_cols = ['Street Address', 'City', 'State', 'ZIP']
@@ -98,18 +142,29 @@ def create_coordinates_list(df):
     """
     Extract a list of unique coordinates from a DataFrame.
 
-    The DataFrame should either contain a single 'Coordinates' column (with tuple format) or two separate columns
-    ['Longitude', 'Latitude'] for the function to extract and pair the coordinates.
+    Given a DataFrame with either a single 'Coordinates' column (in tuple format) or separate 'Longitude'
+    and 'Latitude' columns, this function pairs and extracts unique coordinates.
 
     Parameters:
-    - df (DataFrame): DataFrame with either 'Coordinates' column or ['Longitude', 'Latitude'] columns.
+    ----------
+    df : pd.DataFrame
+        A DataFrame with either a 'Coordinates' column or ['Longitude', 'Latitude'] columns.
 
     Returns:
-    - list: List of unique (Longitude, Latitude) coordinates.
+    -------
+    list
+        List of unique (Longitude, Latitude) coordinates.
 
     Raises:
-    - Exception: If the DataFrame does not have the required columns.
-    - Exception: If no coordinates are found after processing.
+    ------
+    Exception
+        If the DataFrame does not have the required columns.
+    Exception
+        If no coordinates are found after processing.
+
+    Example:
+    --------
+    # TODO Provide example if desired.
     """
 
     coordinate_parts_cols = ['Longitude', 'Latitude']
