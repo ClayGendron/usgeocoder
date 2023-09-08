@@ -180,6 +180,8 @@ response = geocode_coordinates(coordinates)
 
 Tip: Coordinate pairs are stored as (Longitude, Latitude) or (x, y).
 If results are not as expected, try switching the order of the coordinates.
+For instance, you will notice that Google Maps shows points as (Latitude, Longitude) or (y, x).
+The order of (Longitude, Latitude) was chosen to work better with GeoJSON files, amoung other reasons.
 
 ## Contribute
 
