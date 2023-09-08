@@ -1,5 +1,6 @@
-# USGeoCoder
-USGeoCoder is an easy and free-to-use package for geocoding US addresses with the US Census Geocoder API.
+<h1 align="center">
+<img src="https://raw.githubusercontent.com/claygendron/usgeocoder/main/usgeocoder_cover_art.png" width="1200">
+</h1>
 
 ## Table of Contents
 
@@ -15,6 +16,7 @@ USGeoCoder is an easy and free-to-use package for geocoding US addresses with th
 ## Overview
 
 Thank you for your interest in USGeoCoder package!
+USGeoCoder is an easy and free-to-use package for geocoding US addresses with the US Census Geocoder API.
 This package was created to solve two problems I encountered while trying to geocode data in my data pipelines:
 
 1. Geocode thousands of addresses in a reasonable amount of time without caps on total requests.
