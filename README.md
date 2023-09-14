@@ -1,5 +1,5 @@
 <h1 align="center">
-<img src="https://raw.githubusercontent.com/claygendron/usgeocoder/main/usgeocoder_cover_art.png" width="1200">
+<img src="https://raw.githubusercontent.com/claygendron/usgeocoder/main/USGeocoder.png" width="1200">
 </h1>
 
 # Table of Contents
