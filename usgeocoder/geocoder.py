@@ -46,23 +46,27 @@ class Geocoder:
         Filter out geocoding results older than the specified time.
     """
 
-    def __init__(self):
+    def __init__(self, data=None):
         """ Initializes the Geocoder instance. Loads or creates necessary CSV files for storing results. """
-        self.addresses = pd.Series()
-        self.coordinates = pd.Series()
+        # Initialize attributes
+        self.data = None
+        self.addresses = None
+        self.coordinates = None
         self.located_addresses = None
         self.failed_coordinates = None
         self.located_coordinates = None
         self.failed_addresses = None
         print(ROOT)
 
+        # Initialize CSV files
         files = {
-            'located_addresses': ['Address', 'Date', 'Longitude', 'Latitude'],
-            'failed_addresses': ['Address', 'Date', 'Longitude', 'Latitude'],
+            'located_addresses': ['Address', 'Date', 'Longitude', 'Latitude', 'Coordinates'],
+            'failed_addresses': ['Address', 'Date', 'Longitude', 'Latitude', 'Coordinates'],
             'located_coordinates': ['Coordinates', 'Date', 'State', 'County', 'Census Block', 'Census Tract'],
             'failed_coordinates': ['Coordinates', 'Date', 'State', 'County', 'Census Block', 'Census Tract'],
         }
 
+        # Load existing CSV files or create new ones if they don't exist
         if (ROOT / 'geocoder').exists():
             for file_name, columns in files.items():
                 setattr(self, file_name, self.load_or_create_csv(file_name, columns))
@@ -72,6 +76,10 @@ class Geocoder:
                 df = pd.DataFrame(columns=columns)
                 df.to_csv(ROOT / 'geocoder' / f'{file_name}.csv', index=False)
                 setattr(self, file_name, df)
+
+        # Add data if provided
+        if data is not None:
+            self.add_data(data)
 
     @staticmethod
     def load_or_create_csv(file_name, columns):
@@ -101,6 +109,32 @@ class Geocoder:
             df = pd.DataFrame(columns=columns)
             df.to_csv(path, index=False)
             return pd.DataFrame(columns=columns)
+
+    def add_data(self, data):
+        """
+        Add data to the Geocoder instance.
+
+        Parameters
+        ----------
+        data : pd.DataFrame
+            Data containing addresses or coordinates
+        """
+
+        # Ensure that pd.DataFrame contains an Address or Coordinates column
+        if isinstance(data, pd.DataFrame):
+            # Check for Coordinates first to avoid unnecessary forward geocoding
+            if 'Coordinates' in data.columns:
+                self.add_addresses(data['Address'])
+            elif 'Address' in data.columns:
+                self.add_coordinates(data['Coordinates'])
+            else:
+                raise ValueError('Data must contain an Address or Coordinates column.')
+
+            self.data = data.copy()
+
+        # Raise an error if data is not a pandas dataframe
+        else:
+            raise TypeError('Data must be a pandas dataframe.')
 
     def add_addresses(self, data):
         """
@@ -146,7 +180,7 @@ class Geocoder:
                 print('Data must be a pandas dataframe, series, or list.')
                 return None
 
-    def forward(self, addresses=None):
+    def forward(self, addresses=None, verbose=False):
         """
         Conduct forward geocoding on the provided addresses.
 
@@ -154,15 +188,22 @@ class Geocoder:
         ----------
         addresses : pd.DataFrame, pd.Series, optional
             Uses addresses stored in the instance if not provided.
+        verbose : bool, optional
+            Print progress to console. Default is False.
 
         Raises
         ------
+        ValueError: If no addresses are provided to instance.
         ValueError: If no addresses are successfully geocoded.
         """
 
+        # Add addresses to self.addresses if given
         if addresses is not None:
-            # add addresses to self.addresses if given
             self.add_addresses(addresses)
+        # Ensure that Addresses have been provided to Geocoder
+        if self.addresses is None:
+            raise ValueError('No addresses were provided to Geocoder instance. Forward geocoding failed.'
+                             'Please add addresses to Geocoder instance or provide addresses to forward() method.')
 
         # Load addresses from self.addresses and convert to set
         addresses = set(self.addresses)
@@ -172,14 +213,21 @@ class Geocoder:
         for seen_addresses in [located_addresses, failed_addresses]:
             addresses = addresses.difference(seen_addresses)
 
+        # Print the number of addresses to be geocoded
+        if verbose:
+            number_of_addresses = len(addresses)
+            number_of_addresses = f'{number_of_addresses:,}'
+            print(f'Geocoding {number_of_addresses} addresses...')
+
+        # Batch geocoder
         located_df, failed_df = batch_geocode(data=addresses, direction='forward', n_threads=100)
 
         # Add geocoding results to self.located_addresses and self.failed_addresses
         # Raise an error if no addresses were successfully geocoded
         if located_df.empty:
-            raise ValueError('No addresses were successfully geocoded. Review Geocoder.addresses data.')
-        # If self.located_addresses is empty, set it to located_df
-        elif self.located_addresses.empty:
+            raise ValueError('No addresses were successfully geocoded. Review Geocoder.addresses.')
+        # If self.located_addresses is None, set it to located_df
+        elif self.located_addresses is None:
             self.located_addresses = located_df.copy()
         # Otherwise, concatenate located_df to self.located_addresses
         else:
@@ -188,20 +236,31 @@ class Geocoder:
         # Pass if failed_df is empty
         if failed_df.empty:
             pass
-        # If self.failed_addresses is empty, set it to failed_df
-        elif self.failed_addresses.empty:
+        # If self.failed_addresses is None, set it to failed_df
+        elif self.failed_addresses is None:
             self.failed_addresses = failed_df.copy()
         # Otherwise, concatenate failed_df to self.failed_addresses
         else:
             self.failed_addresses = pd.concat([self.failed_addresses, failed_df], ignore_index=True)
 
         # Add geocoding results to self.coordinates if not already there
-        if len(self.coordinates) == 0:
+        if self.coordinates is None:
             self.add_coordinates(self.located_addresses)
+
+        # Print the number of addresses located and failed addresses
+        if verbose:
+            number_of_located_addresses = len(located_df)
+            number_of_located_addresses = f'{number_of_located_addresses:,}'
+            number_of_failed_addresses = len(failed_df)
+            number_of_failed_addresses = f'{number_of_failed_addresses:,}'
+
+            print('Geocoding complete')
+            print(f' - {number_of_located_addresses} addresses were located')
+            print(f' - {number_of_failed_addresses} addresses failed')
 
         self.save_data()
 
-    def reverse(self, coordinates=None):
+    def reverse(self, coordinates=None, verbose=False):
         """
         Conduct reverse geocoding on the provided coordinates.
 
@@ -209,15 +268,23 @@ class Geocoder:
         ----------
         coordinates : pd.DataFrame, pd.Series, optional
             Uses coordinates stored in the instance if not provided.
+        verbose : bool, optional
+            Print progress to console. Default is False.
 
         Raises
         ------
+        ValueError: If no coordinates are provided to instance.
         ValueError: If no coordinates are successfully geocoded.
         """
 
+        # Add coordinates to self.coordinates if given
         if coordinates is not None:
-            # add coordinates to self.coordinates if given
             self.add_coordinates(coordinates)
+
+        # Ensure that Coordinates have been provided to Geocoder
+        if self.coordinates is None:
+            raise ValueError('No coordinates were provided to Geocoder instance. Reverse geocoding failed.'
+                             'Please add coordinates to Geocoder instance or provide coordinates to reverse() method.')
 
         # Load coordinates from self.coordinates and convert to set
         coordinates = set(self.coordinates)
@@ -227,15 +294,22 @@ class Geocoder:
         failed_coordinates = self.failed_coordinates['Coordinates'].values
         for seen_coordinates in [located_coordinates, failed_coordinates]:
             coordinates = coordinates.difference(seen_coordinates)
-        
+
+        # Print the number of coordinates to be geocoded
+        if verbose:
+            number_of_coordinates = len(coordinates)
+            number_of_coordinates = f'{number_of_coordinates:,}'
+            print(f'Reverse geocoding {number_of_coordinates} coordinates...')
+
+        # Batch geocoder
         located_df, failed_df = batch_geocode(data=coordinates, direction='reverse', n_threads=100)
 
         # Add geocoding results to self.located_coordinates and self.failed_coordinates
         # Raise an error if no coordinates were successfully geocoded
         if located_df.empty:
             raise ValueError('No coordinates were successfully geocoded. Review Geocoder.coordinates data.')
-        # If self.located_coordinates is empty, set it to located_df
-        elif self.located_coordinates.empty:
+        # If self.located_coordinates is None, set it to located_df
+        elif self.located_coordinates is None:
             self.located_coordinates = located_df.copy()
         # Otherwise, concatenate located_df to self.located_coordinates
         else:
@@ -244,14 +318,111 @@ class Geocoder:
         # Pass if failed_df is empty
         if failed_df.empty:
             pass
-        # If self.failed_coordinates is empty, set it to failed_df
-        elif self.failed_coordinates.empty:
+        # If self.failed_coordinates is None, set it to failed_df
+        elif self.failed_coordinates is None:
             self.failed_coordinates = failed_df.copy()
         # Otherwise, concatenate failed_df to self.failed_coordinates
         else:
             self.failed_coordinates = pd.concat([self.failed_coordinates, failed_df], ignore_index=True)
+
+        # Print the number of coordinates located and failed coordinates
+        if verbose:
+            number_of_located_coordinates = len(located_df)
+            number_of_located_coordinates = f'{number_of_located_coordinates:,}'
+            number_of_failed_coordinates = len(failed_df)
+            number_of_failed_coordinates = f'{number_of_failed_coordinates:,}'
+
+            print('Reverse geocoding complete')
+            print(f' - {number_of_located_coordinates} coordinates were located')
+            print(f' - {number_of_failed_coordinates} coordinates failed')
         
         self.save_data()
+
+    def merge_data(self, data=None, verbose=False):
+        """
+        Merge data with located_addresses and located_coordinates.
+
+        Parameters
+        ----------
+        data : pd.DataFrame, optional
+            Data to be merged with located_addresses and located_coordinates.
+        verbose : bool, optional
+            Print progress to console. Default is False.
+
+        Raises
+        ------
+        ValueError: If no data is provided to instance.
+        ValueError: If no data is successfully merged.
+        """
+
+        if data is not None:
+            self.add_data(data)
+
+        if self.data is None:
+            raise ValueError('No data was provided to Geocoder instance. Data merge failed.'
+                             'Please add data to Geocoder instance or provide data to merge_data() method.')
+
+        # Merge data
+        if 'Coordinates' in self.data.columns:
+            if self.located_coordinates is None:
+                raise ValueError('No coordinates have been successfully geocoded. Data merge failed.'
+                                 'Please run reverse() method to reverse geocode coordinate data.')
+
+            self.data = self.data.merge(self.located_coordinates, how='left', on='Coordinates')
+
+        elif 'Address' in self.data.columns:
+            if self.located_addresses is None:
+                raise ValueError('No addresses have been successfully geocoded. Data merge failed.'
+                                 'Please run forward() method to geocode address data.')
+
+            self.data = self.data.merge(self.located_addresses, how='left', on='Address')
+
+            if self.located_coordinates is not None:
+                self.data = self.data.merge(self.located_coordinates, how='left', on='Coordinates')
+
+        if verbose:
+            print('Data merge complete')
+
+        return self.data
+
+    def process(self, forward=True, reverse=True, merge=True, data=None, verbose=False):
+        """
+        Process data by conducting forward and reverse geocoding and merging the results.
+
+        Parameters
+        ----------
+        forward : bool, optional
+            Conduct forward geocoding. Default is True.
+        reverse : bool, optional
+            Conduct reverse geocoding. Default is True.
+        merge : bool, optional
+            Merge data with located_addresses and located_coordinates. Default is True.
+        data : pd.DataFrame, optional
+            Data to be processed.
+        verbose : bool, optional
+            Print progress to console. Default is False.
+        """
+
+        if data is not None:
+            self.add_data(data)
+
+        if forward:
+            self.forward(verbose=verbose)
+            if verbose:
+                print()
+        if reverse:
+            self.reverse(verbose=verbose)
+            if verbose:
+                print()
+        if merge:
+            self.merge_data(verbose=verbose)
+            if verbose:
+                print()
+
+        if verbose:
+            print('Processing complete')
+
+        return self.data
 
     def save_data(self):
         """ Save geocoding results to CSV files. """

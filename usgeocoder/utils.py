@@ -16,18 +16,6 @@ def concatenate_address(df):
     pd.Series
         A Pandas Series containing the concatenated addresses, where each entry
         corresponds to a row in the input DataFrame.
-
-    Example:
-    --------
-    df = pd.DataFrame({
-        'Street Address': ['123 Main St'],
-        'City': ['Portland'],
-        'State': ['ME'],
-        'ZIP': ['04101']
-    })
-    concatenate_address(df)
-    0    123 Main St, Portland, ME 04101
-    Name: Address, dtype: object
     """
 
     df = df.copy()
@@ -64,16 +52,6 @@ def concatenate_coordinates(df):
     pd.Series
         A Pandas Series containing the (Longitude, Latitude) tuples, where each
         entry corresponds to a row in the input DataFrame.
-
-    Example:
-    --------
-    df = pd.DataFrame({
-        'Longitude': [43.623068],
-        'Latitude': [-70.207895]
-    })
-    concatenate_coordinates(df)
-    0    (43.623068, -70.207895)
-    Name: Coordinates, dtype: object
     """
 
     coordinates = list(zip(df['Longitude'], df['Latitude']))
@@ -103,10 +81,6 @@ def create_address_list(df):
         If the DataFrame does not have the required columns.
     Exception
         If no addresses are found after processing.
-
-    Example:
-    --------
-    # TODO Provide example if desired.
     """
 
     address_parts_cols = ['Street Address', 'City', 'State', 'ZIP']
@@ -161,10 +135,6 @@ def create_coordinates_list(df):
         If the DataFrame does not have the required columns.
     Exception
         If no coordinates are found after processing.
-
-    Example:
-    --------
-    # TODO Provide example if desired.
     """
 
     coordinate_parts_cols = ['Longitude', 'Latitude']

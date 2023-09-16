@@ -36,10 +36,6 @@ def geocode_address(address, benchmark=BENCHMARK, batch=False):
             Longitude of the geocoded address, or None if geocoding was unsuccessful.
         - Latitude : float or None
             Latitude of the geocoded address, or None if geocoding was unsuccessful.
-
-    Examples
-    --------
-    # TODO: Provide example if desired.
     """
 
     base_geocode_url = 'https://geocoding.geo.census.gov/geocoder/locations/onelineaddress'
@@ -55,11 +51,13 @@ def geocode_address(address, benchmark=BENCHMARK, batch=False):
         """ Construct and return a successful geocode response. """
         longitude = response_coordinates['x']
         latitude = response_coordinates['y']
+        longitude_latitude = (longitude, latitude)
         response = {
             'Address': requested_address,
             'Date': today,
             'Longitude': longitude,
-            'Latitude': latitude
+            'Latitude': latitude,
+            'Coordinates': longitude_latitude
         }
 
         return response
@@ -70,7 +68,8 @@ def geocode_address(address, benchmark=BENCHMARK, batch=False):
             'Address': requested_address,
             'Date': today,
             'Longitude': None,
-            'Latitude': None
+            'Latitude': None,
+            'Coordinates': None
         }
 
         return response
@@ -159,10 +158,6 @@ def geocode_coordinates(longitude_latitude, benchmark=BENCHMARK, vintage=VINTAGE
             The census block of the coordinates, or None if geocoding was unsuccessful.
         - Census Tract : str or None
             The census tract of the coordinates, or None if geocoding was unsuccessful.
-
-    Examples
-    --------
-    # TODO: Provide example if desired.
     """
 
     longitude = longitude_latitude[0]
@@ -281,7 +276,7 @@ def batch_geocode(data, direction='forward', n_threads=1):
     -------
     located_df : pd.DataFrame
         DataFrame with successfully geocoded data. Columns vary based on `direction`:
-        - 'forward': ['Address', 'Date', 'Longitude', 'Latitude']
+        - 'forward': ['Address', 'Date', 'Longitude', 'Latitude', 'Coordinates']
         - 'reverse': ['Coordinates', 'Date', 'State', 'County', 'Urban Area', 'Census Block', 'Census Tract']
     failed_df : pd.DataFrame
         DataFrame with data that couldn't be geocoded. Columns are consistent with `located_df`.
@@ -293,12 +288,8 @@ def batch_geocode(data, direction='forward', n_threads=1):
 
     Notes
     -----
-    If `n_threads` is set higher than 100, a warning will be displayed prompting the user to consider
-    using a recommended maximum of 100 threads to avoid potential rate limits.
-
-    Examples
-    --------
-    # TODO: Provide example if desired.
+    If `n_threads` is set higher than 100, a warning will be displayed with a recommendation to set `n_threads` to 100
+    to avoid potential rate limits.
     """
 
     # Raise error if invalid direction
@@ -319,7 +310,7 @@ def batch_geocode(data, direction='forward', n_threads=1):
     data = set(data)
 
     # Define columns for the output DataFrames based on direction
-    forward_cols = ['Address', 'Date', 'Longitude', 'Latitude']
+    forward_cols = ['Address', 'Date', 'Longitude', 'Latitude', 'Coordinates']
     reverse_cols = ['Coordinates', 'Date', 'State', 'County', 'Urban Area', 'Census Block', 'Census Tract']
 
     # Select geocoding function based on direction
