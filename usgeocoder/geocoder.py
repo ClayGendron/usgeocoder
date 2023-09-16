@@ -398,6 +398,11 @@ class Geocoder:
             Data to be processed.
         verbose : bool, optional
             Print progress to console. Default is False.
+
+        Returns
+        -------
+        pd.DataFrame
+            Data with geocoding results if merge=True.
         """
 
         if data is not None:
@@ -420,7 +425,7 @@ class Geocoder:
             print('Processing complete')
 
         if merge:
-            return self.geocoded_data
+            return self.data
 
     def save_data(self):
         """ Save geocoding results to CSV files. """
