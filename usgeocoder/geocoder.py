@@ -56,7 +56,6 @@ class Geocoder:
         self.failed_coordinates = None
         self.located_coordinates = None
         self.failed_addresses = None
-        print(ROOT)
 
         # Initialize CSV files
         files = {
@@ -124,9 +123,9 @@ class Geocoder:
         if isinstance(data, pd.DataFrame):
             # Check for Coordinates first to avoid unnecessary forward geocoding
             if 'Coordinates' in data.columns:
-                self.add_addresses(data['Address'])
-            elif 'Address' in data.columns:
                 self.add_coordinates(data['Coordinates'])
+            elif 'Address' in data.columns:
+                self.add_addresses(data['Address'])
             else:
                 raise ValueError('Data must contain an Address or Coordinates column.')
 
@@ -226,8 +225,8 @@ class Geocoder:
         # Raise an error if no addresses were successfully geocoded
         if located_df.empty:
             raise ValueError('No addresses were successfully geocoded. Review Geocoder.addresses.')
-        # If self.located_addresses is None, set it to located_df
-        elif self.located_addresses is None:
+        # If self.located_addresses is empty, set it to located_df
+        elif self.located_addresses.empty:
             self.located_addresses = located_df.copy()
         # Otherwise, concatenate located_df to self.located_addresses
         else:
@@ -236,8 +235,8 @@ class Geocoder:
         # Pass if failed_df is empty
         if failed_df.empty:
             pass
-        # If self.failed_addresses is None, set it to failed_df
-        elif self.failed_addresses is None:
+        # If self.failed_addresses is empty, set it to failed_df
+        elif self.failed_addresses.empty:
             self.failed_addresses = failed_df.copy()
         # Otherwise, concatenate failed_df to self.failed_addresses
         else:

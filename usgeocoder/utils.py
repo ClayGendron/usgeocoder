@@ -93,10 +93,12 @@ def create_address_list(df):
 
     # Handle case where there's only 'Address' column
     elif set(address_col).issubset(set(df.columns)):
+        df = df.dropna(subset=['Address'])
         addresses = df['Address']
 
     # Handle case where there are 'Street Address', 'City', 'State', and 'ZIP' columns
     elif set(address_parts_cols).issubset(set(df.columns)):
+        df = df.dropna(subset=address_parts_cols)
         addresses = concatenate_address(df)
 
     # This should not be reached based on previous checks, but included for clarity.
@@ -141,17 +143,17 @@ def create_coordinates_list(df):
     coordinates_col = ['Coordinates']
 
     # Ensure columns exist
-    if not (set(coordinate_parts_cols).issubset(df.columns) and not set(coordinates_col).issubset(df.columns)):
+    if not set(coordinate_parts_cols).issubset(df.columns) and not set(coordinates_col).issubset(df.columns):
         raise Exception('The dataframe must have the following columns:'
                         "['Longitude', 'Latitude'] or 'Coordinates'")
 
     # Handle case where there's only 'Coordinates' column
-    if set(coordinates_col).issubset(df.columns):
-        df = df.dropna(subset=[coordinates_col])
-        coordinates = df[coordinates_col]
+    if set(coordinates_col).issubset(set(df.columns)):
+        df = df.dropna(subset=['Coordinates'])
+        coordinates = df['Coordinates']
 
     # Handle case where there are 'Longitude' and 'Latitude' columns
-    elif set(coordinate_parts_cols).issubset(df.columns):
+    elif set(coordinate_parts_cols).issubset(set(df.columns)):
         df = df.dropna(subset=coordinate_parts_cols)
         coordinates = concatenate_coordinates(df)
 

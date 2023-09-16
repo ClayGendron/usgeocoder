@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 import shutil
 
-from usgeocoder import Geocoder
+from usgeocoder import Geocoder, concatenate_address
 
 # Get root of test directory
 ROOT = Path(os.getcwd())
@@ -31,11 +31,13 @@ class TestGeocoder(unittest.TestCase):
         self.assertEqual(len(self.geo.addresses), 56)
 
     def test_geocoding(self):
-        self.geo.add_addresses(self.state_capitals)
-        self.geo.forward()
+        self.state_capitals['Address'] = concatenate_address(self.state_capitals)
+        self.geo.add_data(self.state_capitals)
+        test = self.geo.process(verbose=True)
         self.assertTrue(len(self.geo.located_addresses) > 0)
-        self.geo.reverse()
         self.assertTrue(len(self.geo.located_coordinates) > 0)
+        self.assertTrue('Address' in test.columns)
+        self.assertTrue('Coordinates' in test.columns)
 
 
 if __name__ == '__main__':
