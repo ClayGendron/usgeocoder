@@ -26,9 +26,6 @@ If this package helps you, I would love to hear from you! And I would love it ev
    - [API Request Functions](#api-request-functions)
    - [Batch Geocoder Function](#batch-geocoder-function)
    - [Geocoder Class](#geocoder-class)
-     - [Using the Process Method](#using-the-process-method)
-     - [Using Separate Methods](#using-separate-methods)
-     - [Using Helper Functions](#using-helper-functions)
 3. [Contribute](#contribute)
 4. [License](#license)
 
