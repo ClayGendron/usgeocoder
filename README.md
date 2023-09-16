@@ -86,11 +86,11 @@ The `batch_geocoder` function will allow you to parallelize the requests in the 
 ```python
 # Forward
 addresses = ['123 Main St, City, State Zip', '456 Main St, City, State Zip']
-located_addresses, failed_addresses = batch_geocoder(addresses, direction='forward', n_threads=100)
+located, failed = batch_geocoder(addresses, direction='forward', n_threads=100)
 
 # Reverse
 coordinates = [(-70.207895, 43.623068), (-71.469826, 43.014701)]
-located_coordinates, failed_coordinates = batch_geocoder(coordinates, direction='reverse', n_threads=100)
+located, failed = batch_geocoder(coordinates, direction='reverse', n_threads=100)
 ```
 
 **Note:** The `batch_geocoder` function has been optimized to run at a max of 100 for `n_threads`.
@@ -102,88 +102,105 @@ Increasing `n_threads` beyond 100 will increase the likelihood of hitting a rate
 from usgeocoder import Geocoder
 ```
 
-The goal of the `Geocoder` class is to organize the geocoding process in a data pipeline.
+The `Geocoder` class aims to organize the geocoding process in a data pipeline.
 When the `Geocoder` class is initialized, it will create a directory called `geocoder` in the current working directory.
 This new directory will store each address or set of coordinates seen by the `Geocoder` class.
 If this directory already exists, the `Geocoder` class will instead load in the data from the directory.
+A directory is created to avoid making duplicate requests to the API for the same address or set of coordinates, whether the request was successful or not.
 
-It is recommended to initialize the `Geocoder` class like so:
+### Using the Process Method
+
+The recommended way to use the `Geocoder` class is to initialize it and then use the `process()` method to manage what actions to take in the geocoding process.
+The `process()` method will take a dataframe that has a column with complete addresses or sets of coordinates.
+This column should be called `Address` or `Coordinates` and be formatted the same as required by the API request functions.
+By default, the `process()` method will perform the following:
+
+- Add the data from the pipeline to the `Geocoder` class.
+- Forward geocode the addresses.
+- Reverse geocode the coordinates from the forward geocoding step.
+- Merge the geocoded data back to a copy of the original dataframe.
+- Return the merged dataframe.
+
+Here is an example of using the `process()` method.
 
 ```python
 geo = Geocoder()
+geocoded_df = geo.process(data=df)
+
+# or
+
+geo = Geocoder(df)
+geocoded_df = geo.process()
 ```
 
-Once the `Geocoder` class is initialized, there is a small amount of data setup required.
-
-The recommended way to integrate the `Geocoder` class into your data pipeline is to add a column to your dataframe that has the full address or set of coordinates.
-This column should be called `Address` or `Coordinates`, respectively.
-This is recommended as it is the easiest way of joining the geocoded data back into your original dataframe.
-
-If you have a dataframe with separate columns for street address, city, state, and zip, you can use a helper function to create a new `Address` column or create the column yourself.
-
-To begin the geocoding process, you must add data to the `Geocoder` class.
+If you want to customize the geocoding process, you can flip certain steps to `True` or `False` in the `process()` method.
+Here is an example of the defaults.
 
 ```python
-# Add a dataframe with address parts
-# Create a new column with full address with helper function
-from usgeocoder import concatenate_address
-df = pd.DataFrame(columns=['address 1', 'address 2', 'city', 'state', 'zip code', 'important feature'])
-df.rename(columns={'address 1': 'Street Address', 'address 2': 'City', 'city': 'State', 'state': 'Zip'}, inplace=True)
-df['Address'] = concatenate_address(df)
-geo.add_addresses(df['Address'])
-
-# Rename column with full address to 'Address'
-df = pd.DataFrame(columns=['full address', 'address 1', 'address 2', 'city', 'state', 'zip code', 'important feature'])
-df.rename(columns={'full address': 'Address'}, inplace=True)
-geo.add_addresses(df['Address'])
+geo.process(
+   data=df,
+   forward=True,
+   reverse=True,
+   merge=True,
+   verbose=False
+)
 ```
 
-If you have a list or series of full addresses, you can also easily add those to your `Geocoder` class.
+**Note:** The `Geocoder` class was designed assuming that most users will be geocoding addresses.
+Therefore, the default behavior is to forward geocode addresses and then reverse geocode the coordinates from the forward geocoding step.
+If you are strictly reverse geocoding coordinates, you can set `forward=False` in the `process()` method to skip the forward geocoding step.
+
+### Using Separate Methods
+
+If you want to use the `Geocoder` class to manage the geocoding process but would like to use separate methods for each step, you can do so.
+Here is an example of the separate methods utilized in the `process()` method.
 
 ```python
-# Add a list or pd.Series of addresses
-addresses = ['123 Main St, City, State Zip', '456 Main St, City, State Zip']
-geo.add_addresses(addresses)
-```
-
-These steps work just the same for reverse geocoding with coordinates.
-
-```python
-# Add a dataframe with coordinate parts
-# Create a new column with full coordinates with helper function
-from usgeocoder import concatenate_coordinates
-df = pd.DataFrame(columns=['x', 'y', 'important feature'])
-df.rename(columns={'x': 'Longitude', 'y': 'Latitude'}, inplace=True)
-df['Coordinates'] = concatenate_coordinates(df)
-geo.add_coordinates(df['Coordinates'])
-
-# Rename column with full coordinates to 'Coordinates'
-df = pd.DataFrame(columns=['xy', 'x', 'y', 'important feature'])
-df.rename(columns={'xy': 'Coordinates'}, inplace=True)
-geo.add_coordinates(df['Coordinates'])
-
-# Add a list or pd.Series of coordinates
-coordinates = [(-70.207895, 43.623068), (-71.469826, 43.014701)]
-geo.add_coordinates(coordinates)
-```
-
-Once the data has been added, you can instruct the `Geocoder` class to geocode the data with the `forward()` and `reverse()` methods.
-Forward geocoding will take addresses and return coordinates.
-Reverse geocoding will take coordinates and return address parts.
-
-```python
+geo = Geocoder(df)
 geo.forward()
 geo.reverse()
+geo.merge_data()
+geocoded_df = geo.data
 ```
 
-If you used the helper function to create a new `Address` or `Coordinates` column, you can now simply merge the geocoded data back into your original dataframe.
+**Note:** When adding data to the `Geocoder` class, it is designed to add the `Address` or `Coordinates` as an un-duplicated list to its `addresses` and `coordinates` attributes.
+When the `forward()` or `reverse()` methods are called, they look to these attributes for the data to geocode.
+If you add a dataframe with both `Address` and `Coordinates` columns, the `Geocoder` class will only populate the `coordinates` attribute as there is no need to forward geocode the addresses.
+If the `forward()` method is called, it will raise an error.
+
+### Using Helper Functions
+
+If you have a dataframe with separate columns for `Street Address`, `City`, `State`, and `Zip`, and named accordingly, you can use a helper function to create a new `Address` column, or create the column yourself.
+The below example illustrates a simple step to rename the `existing_cols` to the required column names.
 
 ```python
-# Merge addresses
-df_merged = df.merge(geo.located_addresses, how='left', on='Address')
+# Create a new column with complete address using helper function
+from usgeocoder import concatenate_address
+existing_cols = ['address 1', 'address 2', 'city', 'state', 'zip code', 'important feature']
+df = pd.DataFrame(columns=existing_cols)
+df.rename(columns={
+   'address 1': 'Street Address', 
+   'city': 'City', 
+   'state': 'State', 
+   'zip code': 'Zip'
+}, inplace=True)
 
-# Merge coordinates
-df_merged = df.merge(geo.located_coordinates, how='left', on='Coordinates')
+df['Address'] = concatenate_address(df)
+```
+
+These steps work just the same for reverse geocoding to create a new `Coordinates` column with separate `Longitude` and `Latitude` columns.
+
+```python
+# Create a new column with complete coordinates using helper function
+from usgeocoder import concatenate_coordinates
+existing_cols = ['x', 'y', 'important feature']
+df = pd.DataFrame(columns=existing_cols)
+df.rename(columns={
+   'x': 'Longitude', 
+   'y': 'Latitude'
+}, inplace=True)
+
+df['Coordinates'] = concatenate_coordinates(df)
 ```
 
 # Contribute

@@ -382,8 +382,6 @@ class Geocoder:
         if verbose:
             print('Data merge complete')
 
-        return self.data
-
     def process(self, forward=True, reverse=True, merge=True, data=None, verbose=False):
         """
         Process data by conducting forward and reverse geocoding and merging the results.
@@ -421,7 +419,8 @@ class Geocoder:
         if verbose:
             print('Processing complete')
 
-        return self.data
+        if merge:
+            return self.geocoded_data
 
     def save_data(self):
         """ Save geocoding results to CSV files. """
