@@ -2,17 +2,6 @@
 <img src="https://raw.githubusercontent.com/claygendron/usgeocoder/main/USGeocoder.png" width="1200">
 </h1>
 
-# Table of Contents
-
-1. [Overview](#overview)
-2. [Installation](#installation)
-3. [Usage](#usage)
-   - [API Request Functions](#api-request-functions)
-   - [Batch Geocoder Function](#batch-geocoder-function)
-   - [Geocoder Class](#geocoder-class)
-5. [Contribute](#contribute)
-6. [License](#license)
-
 # Overview
 
 Thank you for your interest in USGeoCoder package!
@@ -29,6 +18,19 @@ This package is designed to help anyone, from an individual data scientist or de
 If this package helps you, I would love to hear from you! And I would love it even more if you give feedback or contribute to the package 😊
 
 **Note:** This package is in a Beta state, so please be aware that there may be bugs or issues. Thank you for your patience.
+
+# Table of Contents
+
+1. [Installation](#installation)
+2. [Usage](#usage)
+   - [API Request Functions](#api-request-functions)
+   - [Batch Geocoder Function](#batch-geocoder-function)
+   - [Geocoder Class](#geocoder-class)
+     - [Using the Process Method](#using-the-process-method)
+     - [Using Separate Methods](#using-separate-methods)
+     - [Using Helper Functions](#using-helper-functions)
+3. [Contribute](#contribute)
+4. [License](#license)
 
 # Installation
 
