@@ -21,12 +21,12 @@ class Geocoder:
         Series of coordinates for reverse geocoding.
     located_addresses : pd.DataFrame
         Addresses that have been successfully geocoded.
-    failed_coordinates : pd.DataFrame
-        Coordinates that failed reverse geocoding.
-    located_coordinates : pd.DataFrame
-        Coordinates that have been successfully reverse geocoded.
     failed_addresses : pd.DataFrame
         Addresses that failed geocoding.
+    located_coordinates : pd.DataFrame
+        Coordinates that have been successfully reverse geocoded.
+    failed_coordinates : pd.DataFrame
+        Coordinates that failed reverse geocoding.
 
     Methods
     -------
