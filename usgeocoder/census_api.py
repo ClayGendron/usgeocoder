@@ -2,13 +2,13 @@ import pandas as pd
 import requests
 from datetime import date
 from time import sleep
+from tqdm import tqdm
 from concurrent.futures import ThreadPoolExecutor
 
 BENCHMARK = 'Public_AR_Current'
 VINTAGE = 'Current_Current'
-
-sleep_delay = 0.1
-timeouts = [0.5, 1, 2, 5]
+SLEEP_DELAY = 0.1
+TIMEOUTS = [1, 5]
 
 
 def geocode_address(address, benchmark=BENCHMARK, batch=False):
@@ -74,7 +74,7 @@ def geocode_address(address, benchmark=BENCHMARK, batch=False):
 
         return response
 
-    for t in timeouts:
+    for t in TIMEOUTS:
         # Try request for address geocode
         try:
             geocode_req = requests.get(base_geocode_url, params=geocode_params, timeout=t)
@@ -82,7 +82,7 @@ def geocode_address(address, benchmark=BENCHMARK, batch=False):
 
             # If the request was successful but didn't match an address
             if 'result' in geocode_data and not geocode_data['result']['addressMatches']:
-                sleep(sleep_delay)
+                sleep(SLEEP_DELAY)
                 if batch:
                     return failed_response(address)
                 else:
@@ -92,12 +92,12 @@ def geocode_address(address, benchmark=BENCHMARK, batch=False):
             # If the request was successful and matched an address return first match
             elif 'result' in geocode_data and geocode_data['result']['addressMatches']:
                 coordinates = geocode_data['result']['addressMatches'][0]['coordinates']
-                sleep(sleep_delay)
+                sleep(SLEEP_DELAY)
                 return successful_response(address, coordinates)
 
         # Handle JSON decoding error
         except ValueError:
-            sleep(sleep_delay)
+            sleep(SLEEP_DELAY)
             if batch:
                 return failed_response(address)
             else:
@@ -106,20 +106,20 @@ def geocode_address(address, benchmark=BENCHMARK, batch=False):
 
         # Handle request timeout
         except requests.exceptions.Timeout:
-            if t == timeouts[-1]:
-                sleep(sleep_delay)
+            if t == TIMEOUTS[-1]:
+                sleep(SLEEP_DELAY)
                 if batch:
                     return failed_response(address)
                 else:
                     print(f'All attempts failed for address: {address}')
                     return None
 
-            sleep(sleep_delay)
+            sleep(SLEEP_DELAY)
             continue
 
         # Handle any other unforeseen requests-related exceptions
         except requests.exceptions.RequestException as e:
-            sleep(sleep_delay)
+            sleep(SLEEP_DELAY)
             if batch:
                 return failed_response(address)
             else:
@@ -181,8 +181,8 @@ def geocode_coordinates(longitude_latitude, benchmark=BENCHMARK, vintage=VINTAGE
             'Date': today,
             'State': response_geographies['States'][0]['BASENAME'],
             'County': response_geographies['Counties'][0]['BASENAME'],
-            'Census Block': response_geographies['2020 Census Blocks'][0]['BASENAME'],
-            'Census Tract': response_geographies['Census Tracts'][0]['BASENAME']
+            'CensusBlock': response_geographies['2020 Census Blocks'][0]['BASENAME'],
+            'CensusTract': response_geographies['Census Tracts'][0]['BASENAME']
         }
 
         return response
@@ -194,20 +194,21 @@ def geocode_coordinates(longitude_latitude, benchmark=BENCHMARK, vintage=VINTAGE
             'Date': today,
             'State': None,
             'County': None,
-            'Census Block': None,
-            'Census Tract': None
+            'CensusBlock': None,
+            'CensusTract': None
         }
 
         return response
 
-    for t in timeouts:
+    for t in TIMEOUTS:
         try:
             geocode_req = requests.get(base_geocode_url, params=geocode_params, timeout=t)
             geocode_data = geocode_req.json()
+            print(geocode_data)
 
             # If the request was successful but didn't match an address
             if 'result' in geocode_data and len(geocode_data['result']['geographies']) == 0:
-                sleep(sleep_delay)
+                sleep(SLEEP_DELAY)
                 if batch:
                     print(failed_response(longitude, latitude))
                     return failed_response(longitude, latitude)
@@ -222,7 +223,7 @@ def geocode_coordinates(longitude_latitude, benchmark=BENCHMARK, vintage=VINTAGE
 
         # Handle JSON decoding error
         except ValueError:
-            sleep(sleep_delay)
+            sleep(SLEEP_DELAY)
             if batch:
                 print(failed_response(longitude, latitude))
                 return failed_response(longitude, latitude)
@@ -232,22 +233,22 @@ def geocode_coordinates(longitude_latitude, benchmark=BENCHMARK, vintage=VINTAGE
 
         # Handle request timeout
         except requests.exceptions.Timeout:
-            if t == timeouts[-1]:
-                sleep(sleep_delay)
+            if t == TIMEOUTS[-1]:
+                sleep(SLEEP_DELAY)
                 if batch:
                     print(failed_response(longitude, latitude))
                     return failed_response(longitude, latitude)
                 else:
                     print(f'All attempts failed for coordinates: ({longitude}, {latitude})')
-                    sleep(sleep_delay)
+                    sleep(SLEEP_DELAY)
                 return None
 
-            sleep(sleep_delay)
+            sleep(SLEEP_DELAY)
             continue
 
         # Handle any other unforeseen requests-related exceptions
         except requests.exceptions.RequestException as e:
-            sleep(sleep_delay)
+            sleep(SLEEP_DELAY)
             if batch:
                 print(failed_response(longitude, latitude))
                 return failed_response(longitude, latitude)
@@ -256,7 +257,7 @@ def geocode_coordinates(longitude_latitude, benchmark=BENCHMARK, vintage=VINTAGE
                 return None
 
 
-def batch_geocode(data, direction='forward', n_threads=1):
+def batch_geocode(data, direction='forward', n_threads=1, verbose=False):
     """
     Batch geocoding function that supports both forward and reverse geocoding.
 
@@ -271,13 +272,15 @@ def batch_geocode(data, direction='forward', n_threads=1):
         Default is 'forward'.
     n_threads : int, optional
         Number of threads to be used for parallel processing. Default is 1.
+    verbose : bool, optional
+        Whether or not to display a progress bar. Default is False.
 
     Returns
     -------
     located_df : pd.DataFrame
         DataFrame with successfully geocoded data. Columns vary based on `direction`:
         - 'forward': ['Address', 'Date', 'Longitude', 'Latitude', 'Coordinates']
-        - 'reverse': ['Coordinates', 'Date', 'State', 'County', 'Urban Area', 'Census Block', 'Census Tract']
+        - 'reverse': ['Coordinates', 'Date', 'State', 'County', 'Census Block', 'Census Tract']
     failed_df : pd.DataFrame
         DataFrame with data that couldn't be geocoded. Columns are consistent with `located_df`.
 
@@ -311,10 +314,9 @@ def batch_geocode(data, direction='forward', n_threads=1):
 
     # Define columns for the output DataFrames based on direction
     forward_cols = ['Address', 'Date', 'Longitude', 'Latitude', 'Coordinates']
-    reverse_cols = ['Coordinates', 'Date', 'State', 'County', 'Urban Area', 'Census Block', 'Census Tract']
+    reverse_cols = ['Coordinates', 'Date', 'State', 'County', 'UrbanArea', 'CensusBlock', 'CensusTract']
 
     # Select geocoding function based on direction
-    located_df = pd.DataFrame()
     if direction == 'forward':
         request = geocode_address
         output_cols = forward_cols
@@ -322,6 +324,9 @@ def batch_geocode(data, direction='forward', n_threads=1):
     elif direction == 'reverse':
         request = geocode_coordinates
         output_cols = reverse_cols
+
+    else:
+        raise ValueError('Direction must be either "forward" or "reverse"')
 
     # Wrapper function to set geocoding requests to batch mode
     def batch_request(batch_data):
@@ -331,6 +336,17 @@ def batch_geocode(data, direction='forward', n_threads=1):
     located_results = []
     failed_results = []
 
+    # Initialize the progress bar if verbose is True
+    if verbose:
+        progress_bar = tqdm(
+            total=len(data),
+            desc=f'{direction.capitalize()} Geocoding',
+            unit='record',
+            colour=None
+        )
+    else:
+        progress_bar = None
+
     # Use ThreadPoolExecutor to execute geocoding requests in parallel
     with ThreadPoolExecutor(max_workers=n_threads) as executor:
         for result in executor.map(batch_request, data):
@@ -338,6 +354,8 @@ def batch_geocode(data, direction='forward', n_threads=1):
                 located_results.append(result)
             else:
                 failed_results.append(result)
+            if verbose:
+                progress_bar.update(1)
 
     # Convert lists to DataFrames
     located_df = pd.DataFrame(located_results, columns=output_cols)

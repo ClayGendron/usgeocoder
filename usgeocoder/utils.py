@@ -8,18 +8,16 @@ def concatenate_address(df):
     Parameters:
     ----------
     df : pd.DataFrame
-        A DataFrame containing the columns 'Street Address', 'City', 'State',
-        and 'ZIP'.
+        A DataFrame containing the columns 'StreetAddress', 'City', 'State', and 'ZIP'.
 
     Returns:
     -------
     pd.Series
-        A Pandas Series containing the concatenated addresses, where each entry
-        corresponds to a row in the input DataFrame.
+        A Pandas Series containing the concatenated addresses.
     """
 
     df = df.copy()
-    df['Street Address'] = df['Street Address'].fillna('').astype(str)
+    df['StreetAddress'] = df['StreetAddress'].fillna('').astype(str)
     df['City'] = df['City'].fillna('').astype(str)
     df['State'] = df['State'].fillna('').astype(str)
     df['ZIP'] = df['ZIP'].fillna('').astype(str)
@@ -27,8 +25,8 @@ def concatenate_address(df):
     # Pad ZIP codes with leading zeros and then slice to take the first 5 characters
     df['ZIP'] = df['ZIP'].str.zfill(5).str[0:5]
 
-    # Initialize address with 'Street Address'
-    address = df['Street Address']
+    # Initialize address with 'StreetAddress'
+    address = df['StreetAddress']
 
     # If other address parts are not empty, concatenate with separator
     address += df['City'].where(df['City'] == '', ', ' + df['City'])
@@ -50,8 +48,7 @@ def concatenate_coordinates(df):
     Returns:
     -------
     pd.Series
-        A Pandas Series containing the (Longitude, Latitude) tuples, where each
-        entry corresponds to a row in the input DataFrame.
+        A Pandas Series containing the (Longitude, Latitude) tuples.
     """
 
     coordinates = list(zip(df['Longitude'], df['Latitude']))
@@ -63,12 +60,12 @@ def create_address_list(df):
     Extract a list of unique addresses from a DataFrame.
 
     The DataFrame should either contain a single 'Address' column or four separate columns
-    ['Street Address', 'City', 'State', 'ZIP'] for the function to extract and concatenate the addresses.
+    ['StreetAddress', 'City', 'State', 'ZIP'] for the function to extract and concatenate the addresses.
 
     Parameters:
     ----------
     df : pd.DataFrame
-        DataFrame with either 'Address' column or ['Street Address', 'City', 'State', and 'ZIP'] columns.
+        DataFrame with either 'Address' column or ['StreetAddress', 'City', 'State', and 'ZIP'] columns.
 
     Returns:
     -------
@@ -83,20 +80,20 @@ def create_address_list(df):
         If no addresses are found after processing.
     """
 
-    address_parts_cols = ['Street Address', 'City', 'State', 'ZIP']
+    address_parts_cols = ['StreetAddress', 'City', 'State', 'ZIP']
     address_col = ['Address']
 
     # Ensure columns exist
     if not set(address_parts_cols).issubset(set(df.columns)) and not set(address_col).issubset(set(df.columns)):
         raise Exception('The dataframe must have the following columns:'
-                        "['Street Address', 'City', 'State', 'ZIP'] or 'Address'")
+                        "['StreetAddress', 'City', 'State', 'ZIP'] or 'Address'")
 
     # Handle case where there's only 'Address' column
     elif set(address_col).issubset(set(df.columns)):
         df = df.dropna(subset=['Address'])
         addresses = df['Address']
 
-    # Handle case where there are 'Street Address', 'City', 'State', and 'ZIP' columns
+    # Handle case where there are 'StreetAddress', 'City', 'State', and 'ZIP' columns
     elif set(address_parts_cols).issubset(set(df.columns)):
         df = df.dropna(subset=address_parts_cols)
         addresses = concatenate_address(df)

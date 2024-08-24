@@ -178,7 +178,7 @@ from usgeocoder import concatenate_address
 existing_cols = ['address 1', 'address 2', 'city', 'state', 'zip code', 'important feature']
 df = pd.DataFrame(columns=existing_cols)
 df.rename(columns={
-   'address 1': 'Street Address', 
+   'address 1': 'StreetAddress', 
    'city': 'City', 
    'state': 'State', 
    'zip code': 'Zip'
