@@ -470,7 +470,7 @@ class Geocoder:
         self.located_coordinates.to_csv(self.root / 'geocoder/located_coordinates.csv', index=False)
         self.failed_coordinates.to_csv(self.root / 'geocoder/failed_coordinates.csv', index=False)
 
-    def delete_data(self, records='failed', time=365):
+    def delete_data(self, records='failed', time=365, confirm=True):
         """
         Filter out geocoding results older than the specified time.
 
@@ -522,6 +522,10 @@ class Geocoder:
         else:
             raise ValueError("Records must be 'all', 'located', or 'failed'.")
 
+        # Convert 'Date' column to datetime format
+        for key in data_refs.keys():
+            data_refs[key]['Date'] = pd.to_datetime(data_refs[key]['Date'], errors='coerce')
+
         # Filter the data
         for key in keys:
             filtered_data[key] = data_refs[key][data_refs[key]['Date'] > cutoff_date]
@@ -535,11 +539,16 @@ class Geocoder:
         print('This cannot be undone.')
 
         # Confirm the deletion with the user
-        confirmation = input('Would you like to continue? (y/n) ')
+        if confirm:
+            confirmation = input('Would you like to continue? (y/n) ')
+        else:
+            confirmation = 'y'
+
         if confirmation == 'y':
             for key in keys:
                 setattr(self, key, filtered_data[key])
             self.save_data()
             print('Data deletion complete.')
+
         else:
             print('Aborting data deletion.')

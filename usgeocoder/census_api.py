@@ -204,7 +204,6 @@ def geocode_coordinates(longitude_latitude, benchmark=BENCHMARK, vintage=VINTAGE
         try:
             geocode_req = requests.get(base_geocode_url, params=geocode_params, timeout=t)
             geocode_data = geocode_req.json()
-            print(geocode_data)
 
             # If the request was successful but didn't match an address
             if 'result' in geocode_data and len(geocode_data['result']['geographies']) == 0:
